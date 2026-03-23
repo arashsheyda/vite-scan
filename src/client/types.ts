@@ -1,8 +1,11 @@
-export type { ViteScanClientConfig, ViteScanRuntimeConfig } from '../shared/types'
+import type { ViteScanClientConfig } from '../shared/types'
+
+/** A highlight target — either a full Element or an individual Text node. */
+export type HighlightTarget = Element | Text
 
 /** Canvas-based highlight overlay that replaces CSS outline rendering. */
 export interface CanvasOverlay {
-  addHighlight(element: Element): void
+  addHighlight(target: HighlightTarget, count: number): void
   updateConfig(config: ViteScanClientConfig): void
   destroy(): void
 }
@@ -15,7 +18,7 @@ export interface ViteScanSession {
   canvasOverlay: CanvasOverlay | null
   mutationObserver: MutationObserver | null
   performanceObserver: PerformanceObserver | null
-  updates: Map<Element, number>
+  updates: Map<HighlightTarget, number>
   longTasks: number
   longTaskDuration: number
   cumulativeLayoutShift: number

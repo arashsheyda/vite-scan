@@ -2,7 +2,7 @@ import { ROOT_ID, SCAN_ACTION_ID } from '../shared/constants'
 import { getRuntimeConfig, persistClientConfig } from './config'
 import { updateActiveOverlayConfig } from './scan-runtime'
 import type { DockClientScriptContext } from '@vitejs/devtools-kit/client'
-import type { ViteScanClientConfig } from './types'
+import type { ViteScanClientConfig } from '../shared/types'
 
 const AUTO_APPLY_DELAY_MS = 280
 const RECONCILE_RETRY_DELAY_MS = 320

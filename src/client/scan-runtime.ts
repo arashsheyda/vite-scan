@@ -1,6 +1,7 @@
-import { ACTIVE_STORAGE_KEY, HIT_ATTR, SESSION_KEY, STYLE_ID } from '../shared/constants'
+import { ACTIVE_STORAGE_KEY, CANVAS_ID, HIT_ATTR, SESSION_KEY } from '../shared/constants'
 import { createCanvasOverlay } from './canvas-overlay'
-import type { ViteScanClientConfig, ViteScanSession } from './types'
+import { getComponentName } from './component-name'
+import type { HighlightTarget, ViteScanClientConfig, ViteScanSession } from './types'
 import type { DockClientScriptContext } from '@vitejs/devtools-kit/client'
 
 /** Persists whether scan should auto-resume on full page refresh. */
@@ -26,11 +27,9 @@ function setSession(session: ViteScanSession | null): void {
   ;(window as any)[SESSION_KEY] = session
 }
 
-/** Suppresses the CSS-based bootstrap overlay when the canvas overlay takes over. */
+/** Removes the bootstrap canvas overlay so the full client overlay can take over. */
 function clearBootstrapOverlay(): void {
-  document.getElementById(STYLE_ID)?.remove()
-  for (const el of document.querySelectorAll(`[${HIT_ATTR}]`))
-    el.removeAttribute(HIT_ATTR)
+  document.getElementById(CANVAS_ID)?.remove()
 }
 
 /** Mirrors active state to the node-side plugin for dock updates. */
@@ -59,9 +58,16 @@ function getReadableSelector(element: Element): string {
   return `${element.tagName.toLowerCase()}:nth-of-type(${Math.max(index, 1)})`
 }
 
-/** Extracts affected elements from mutation records while ignoring self-noise. */
-function collectMutationTargets(records: MutationRecord[]): Set<Element> {
-  const targets = new Set<Element>()
+/** Creates a label for log summaries, including framework component name when available. */
+function getElementLabel(element: Element): string {
+  const selector = getReadableSelector(element)
+  const component = getComponentName(element)
+  return component ? `${selector} <${component}>` : selector
+}
+
+/** Extracts affected targets from mutation records while ignoring self-noise. */
+function collectMutationTargets(records: MutationRecord[]): Set<HighlightTarget> {
+  const targets = new Set<HighlightTarget>()
 
   for (const record of records) {
     if (record.type === 'attributes') {
@@ -72,14 +78,14 @@ function collectMutationTargets(records: MutationRecord[]): Set<Element> {
       continue
     }
 
-    if (record.type === 'characterData' && record.target.parentElement)
-      targets.add(record.target.parentElement)
+    if (record.type === 'characterData' && record.target.nodeType === Node.TEXT_NODE)
+      targets.add(record.target as Text)
 
     for (const node of record.addedNodes) {
       if (node instanceof Element)
         targets.add(node)
-      else if (node.nodeType === Node.TEXT_NODE && record.target instanceof Element)
-        targets.add(record.target as Element)
+      else if (node.nodeType === Node.TEXT_NODE)
+        targets.add(node as Text)
     }
   }
 
@@ -111,7 +117,11 @@ async function stopSession(context: DockClientScriptContext): Promise<void> {
     .slice(0, 5)
 
   const topLines = hottestElements.length > 0
-    ? hottestElements.map(([element, updates], index) => `${index + 1}. ${getReadableSelector(element)} - ${updates} updates`).join('\n')
+    ? hottestElements.map(([target, updates], index) => {
+        const el = target instanceof Element ? target : target.parentElement
+        const label = el ? getElementLabel(el) : '#text'
+        return `${index + 1}. ${label} - ${updates} updates`
+      }).join('\n')
     : 'No significant DOM mutations were observed.'
 
   const totalUpdates = Array.from(session.updates.values()).reduce((sum, count) => sum + count, 0)
@@ -180,9 +190,11 @@ export async function runScanAction(context: DockClientScriptContext, config: Vi
   session.mutationObserver = new MutationObserver((records) => {
     const targets = collectMutationTargets(records)
 
-    for (const element of targets) {
-      overlay.addHighlight(element)
-      session.updates.set(element, (session.updates.get(element) ?? 0) + 1)
+    for (const target of targets) {
+      const countKey = target instanceof Element ? target : target.parentElement ?? target
+      const count = (session.updates.get(countKey) ?? 0) + 1
+      session.updates.set(countKey, count)
+      overlay.addHighlight(target, count)
     }
   })
 

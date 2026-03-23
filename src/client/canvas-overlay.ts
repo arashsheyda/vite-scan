@@ -1,5 +1,7 @@
 import { CANVAS_ID } from '../shared/constants'
-import type { CanvasOverlay, ViteScanClientConfig } from './types'
+import { getComponentName } from './component-name'
+import type { CanvasOverlay, HighlightTarget } from './types'
+import type { ViteScanClientConfig } from '../shared/types'
 
 /**
  * Creates a canvas-based highlight overlay.
@@ -11,7 +13,9 @@ import type { CanvasOverlay, ViteScanClientConfig } from './types'
  */
 export function createCanvasOverlay(initialConfig: ViteScanClientConfig): CanvasOverlay {
   let config = initialConfig
-  const highlights = new Map<Element, number>()
+  const highlights = new Map<HighlightTarget, number>()
+  const counts = new Map<HighlightTarget, number>()
+  const labels = new Map<HighlightTarget, string>()
   let rafId: number | null = null
 
   const canvas = document.createElement('canvas')
@@ -20,6 +24,39 @@ export function createCanvasOverlay(initialConfig: ViteScanClientConfig): Canvas
   document.documentElement.appendChild(canvas)
 
   const ctx = canvas.getContext('2d')!
+
+  const BADGE_FONT = '600 10px ui-sans-serif,-apple-system,BlinkMacSystemFont,sans-serif'
+  const BADGE_PAD_X = 4
+  const BADGE_PAD_Y = 2
+  const BADGE_RADIUS = 4
+
+  function drawBadge(x: number, y: number, text: string, color: string): void {
+    ctx.font = BADGE_FONT
+    const metrics = ctx.measureText(text)
+    const textW = metrics.width
+    const textH = 10
+    const bw = textW + BADGE_PAD_X * 2
+    const bh = textH + BADGE_PAD_Y * 2
+
+    const bx = x - bw
+    const by = y - bh
+
+    ctx.save()
+    ctx.globalAlpha = 1
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
+
+    ctx.beginPath()
+    ctx.roundRect(bx, by, bw, bh, BADGE_RADIUS)
+    ctx.fillStyle = color
+    ctx.fill()
+
+    ctx.fillStyle = '#fff'
+    ctx.font = BADGE_FONT
+    ctx.textBaseline = 'top'
+    ctx.fillText(text, bx + BADGE_PAD_X, by + BADGE_PAD_Y)
+    ctx.restore()
+  }
 
   function render(): void {
     const now = Date.now()
@@ -37,14 +74,23 @@ export function createCanvasOverlay(initialConfig: ViteScanClientConfig): Canvas
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, width, height)
 
-    for (const [element, startedAt] of highlights) {
+    for (const [target, startedAt] of highlights) {
       const elapsed = now - startedAt
       if (elapsed >= config.pulseDurationMs) {
-        highlights.delete(element)
+        highlights.delete(target)
         continue
       }
 
-      const rect = element.getBoundingClientRect()
+      let rect: DOMRect
+      if (target instanceof Element) {
+        rect = target.getBoundingClientRect()
+      }
+      else {
+        const range = document.createRange()
+        range.selectNodeContents(target)
+        rect = range.getBoundingClientRect()
+        range.detach()
+      }
       if (rect.width === 0 && rect.height === 0)
         continue
 
@@ -66,6 +112,18 @@ export function createCanvasOverlay(initialConfig: ViteScanClientConfig): Canvas
         rect.height + offset * 2,
       )
       ctx.restore()
+
+      const countKey = target instanceof Element ? target : target.parentElement ?? target
+      const count = counts.get(countKey) ?? 1
+      const label = labels.get(countKey)
+      if (count > 1 || label) {
+        const parts: string[] = []
+        if (label)
+          parts.push(`<${label}>`)
+        if (count > 1)
+          parts.push(`\u00D7${count}`)
+        drawBadge(rect.right + offset, rect.top - offset, parts.join(' '), config.highlightColor)
+      }
     }
 
     if (highlights.size > 0)
@@ -75,8 +133,16 @@ export function createCanvasOverlay(initialConfig: ViteScanClientConfig): Canvas
   }
 
   return {
-    addHighlight(element: Element): void {
-      highlights.set(element, Date.now())
+    addHighlight(target: HighlightTarget, count: number): void {
+      highlights.set(target, Date.now())
+      const countKey = target instanceof Element ? target : target.parentElement ?? target
+      counts.set(countKey, count)
+      if (!labels.has(countKey)) {
+        const el = target instanceof Element ? target : target.parentElement
+        const name = el ? getComponentName(el) : null
+        if (name)
+          labels.set(countKey, name)
+      }
       if (rafId === null)
         rafId = requestAnimationFrame(render)
     },
@@ -89,6 +155,8 @@ export function createCanvasOverlay(initialConfig: ViteScanClientConfig): Canvas
       if (rafId !== null)
         cancelAnimationFrame(rafId)
       highlights.clear()
+      counts.clear()
+      labels.clear()
       canvas.remove()
     },
   }
