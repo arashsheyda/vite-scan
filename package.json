@@ -2,7 +2,7 @@
   "name": "vite-scan",
   "type": "module",
   "packageManager": "pnpm@10.8.1",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A Vite DevTools plugin that scans and highlights high-churn DOM updates in the browser.",
   "author": "arashsheyda",
   "license": "MIT",
