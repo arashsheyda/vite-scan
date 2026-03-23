@@ -1,0 +1,125 @@
+:root {
+  color-scheme: light;
+  font-family: "General Sans", "Avenir Next", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(255, 173, 96, 0.28), transparent 28%),
+    radial-gradient(circle at top right, rgba(224, 68, 48, 0.12), transparent 22%),
+    linear-gradient(180deg, #fff8ef 0%, #fffef8 52%, #f5efe9 100%);
+  color: #171d43;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.72rem 1rem;
+  background: #e05a2c;
+  color: #f8f9ff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: rgba(23, 29, 67, 0.08);
+  color: inherit;
+}
+
+button.secondary.active {
+  background: #2b1b14;
+  color: #f8f9ff;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.hero {
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.45rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.78rem;
+  color: #8c4b2f;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4.9vw, 3.8rem);
+  line-height: 0.96;
+}
+
+.copy {
+  max-width: 42rem;
+  margin: 0.9rem 0 0;
+  line-height: 1.6;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.4rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.85rem;
+}
+
+.tile {
+  min-height: 140px;
+  border-radius: 22px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(224, 90, 44, 0.15);
+  box-shadow: 0 18px 60px rgba(122, 71, 34, 0.08);
+}
+
+.badge {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.35rem 0.6rem;
+  background: #fff0e5;
+  color: #9f4d22;
+  font-size: 0.82rem;
+}
+
+.tile strong {
+  display: block;
+  margin-top: 1rem;
+  font-size: 2rem;
+}
+
+.tile p {
+  margin: 0.35rem 0 0;
+  font-family: "JetBrains Mono", "SF Mono", monospace;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding-inline: 1rem;
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  }
+}

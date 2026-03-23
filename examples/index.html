@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vite-scan Examples</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 8% 0%, rgba(255, 146, 72, 0.18), transparent 25%),
+          radial-gradient(circle at 92% 10%, rgba(53, 106, 255, 0.14), transparent 24%),
+          linear-gradient(180deg, #f8fbff 0%, #fffcf6 100%);
+        color: #1c2439;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+      }
+
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 2.2rem 1.1rem 3rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        line-height: 0.95;
+      }
+
+      p {
+        margin: 0.9rem 0 0;
+        line-height: 1.6;
+        max-width: 52rem;
+      }
+
+      .grid {
+        margin-top: 1.4rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.9rem;
+      }
+
+      .card {
+        display: block;
+        text-decoration: none;
+        border-radius: 20px;
+        padding: 1rem;
+        color: inherit;
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(25, 36, 57, 0.1);
+        box-shadow: 0 20px 60px rgba(43, 56, 84, 0.08);
+      }
+
+      .card:hover {
+        transform: translateY(-1px);
+      }
+
+      .tag {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 0.28rem 0.55rem;
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .react .tag {
+        background: #e6f7ff;
+        color: #0d73aa;
+      }
+
+      .vue .tag {
+        background: #e7f8f1;
+        color: #157157;
+      }
+
+      .svelte .tag {
+        background: #ffefe4;
+        color: #b74f1d;
+      }
+
+      .vanilla .tag {
+        background: #f0f0f0;
+        color: #444;
+      }
+
+      h2 {
+        margin: 0.7rem 0 0.35rem;
+        font-size: 1.25rem;
+      }
+
+      .hint {
+        margin-top: 0.35rem;
+        font-family: "JetBrains Mono", "SF Mono", monospace;
+        font-size: 0.82rem;
+        color: #4a556f;
+      }
+
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>vite-scan Framework Examples</h1>
+      <p>
+        Use this page as a jump point while running <strong>pnpm play:examples</strong>. Each card opens
+        a framework-specific demo wired to the same Vite Scan DevTools plugin setup.
+      </p>
+
+      <section class="grid" aria-label="Examples">
+        <a class="card react" href="/react/">
+          <span class="tag">React</span>
+          <h2>Component rerender churn</h2>
+          <p>State shuffle + burst updates with autopilot rerenders.</p>
+          <p class="hint">Route: /react/</p>
+        </a>
+
+        <a class="card vue" href="/vue/">
+          <span class="tag">Vue</span>
+          <h2>Reactive ripple view</h2>
+          <p>Computed lists and timed updates to surface DOM hotspots.</p>
+          <p class="hint">Route: /vue/</p>
+        </a>
+
+        <a class="card svelte" href="/svelte/">
+          <span class="tag">Svelte</span>
+          <h2>Fine-grained update stress</h2>
+          <p>Rapid reactive changes to highlight update islands.</p>
+          <p class="hint">Route: /svelte/</p>
+        </a>
+
+        <a class="card vanilla" href="/vanilla/">
+          <span class="tag">Vanilla</span>
+          <h2>Raw DOM mutation demo</h2>
+          <p>innerHTML-based card shuffle to baseline DOM churn with no framework.</p>
+          <p class="hint">Route: /vanilla/</p>
+        </a>
+      </section>
+    </main>
+  </body>
+</html>

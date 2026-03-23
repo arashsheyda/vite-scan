@@ -31,7 +31,12 @@
   "scripts": {
     "build": "tsdown --config-loader=tsx",
     "changelog": "changelogen --output CHANGELOG.md",
-    "play:dev": "pnpm run build && cd playground && DEBUG='vite:devtools:*' vite",
+    "play:dev": "pnpm run play:vanilla",
+    "play:examples": "pnpm run build && DEBUG='vite:devtools:*' vite --config examples/vite.config.ts",
+    "play:vanilla": "pnpm run build && cd examples/vanilla && DEBUG='vite:devtools:*' vite",
+    "play:react": "pnpm run build && cd examples/react && DEBUG='vite:devtools:*' vite",
+    "play:svelte": "pnpm run build && cd examples/svelte && DEBUG='vite:devtools:*' vite",
+    "play:vue": "pnpm run build && cd examples/vue && DEBUG='vite:devtools:*' vite",
     "prepack": "pnpm run build",
     "release": "changelogen --release --push --clean",
     "release:gh": "changelogen gh release"
@@ -41,11 +46,19 @@
     "vite": "*"
   },
   "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.4",
+    "@vitejs/plugin-vue": "^6.0.1",
     "@tsdown/css": "^0.21.4",
     "@types/node": "^25.5.0",
     "@vitejs/devtools": "latest",
     "@vitejs/devtools-kit": "latest",
     "changelogen": "^0.6.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "svelte": "^5.39.3",
     "tsdown": "^0.21.4",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",

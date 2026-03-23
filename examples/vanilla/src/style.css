@@ -1,0 +1,166 @@
+:root {
+  color-scheme: light;
+  font-family: "Inter", "Avenir Next", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 10% 15%, rgba(120, 120, 120, 0.12), transparent 22%),
+    radial-gradient(circle at 88% 8%, rgba(80, 80, 80, 0.1), transparent 24%),
+    linear-gradient(180deg, #f9f9f9 0%, #ffffff 45%, #f2f2f2 100%);
+  color: #1a1a1a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  background: #222;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: rgba(26, 26, 26, 0.08);
+  color: inherit;
+}
+
+button.secondary.active {
+  background: #111;
+  color: #fff;
+}
+
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.hero {
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.78rem;
+  color: #555;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4.5vw, 3.6rem);
+  line-height: 0.98;
+}
+
+.copy {
+  max-width: 44rem;
+  margin: 0.9rem 0 0;
+  line-height: 1.65;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.4rem;
+}
+
+.stack {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.85rem;
+}
+
+.panel {
+  min-height: 150px;
+  border-radius: 24px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.06);
+}
+
+.label {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.35rem 0.6rem;
+  background: #efefef;
+  color: #444;
+  font-size: 0.82rem;
+}
+
+.panel strong {
+  display: block;
+  margin-top: 1rem;
+  font-size: 2rem;
+}
+
+.panel p {
+  margin: 0.35rem 0 0;
+  font-family: "JetBrains Mono", "SF Mono", monospace;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding-inline: 1rem;
+  }
+
+  .stack {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+
+.controls {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.55rem 0.95rem;
+  background: #cf5f22;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(0.95);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.7rem;
+}
+
+.card {
+  border-radius: 12px;
+  border: 1px solid #f0d3bd;
+  background: #fff;
+  padding: 0.7rem;
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.card p {
+  margin-top: 0.3rem;
+  font-family: "JetBrains Mono", "SF Mono", monospace;
+  font-size: 0.85rem;
+}
