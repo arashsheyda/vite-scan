@@ -3,6 +3,8 @@ import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { normalizePath } from 'vite'
 import {
+  ACTIVE_STORAGE_KEY,
+  CONFIG_STORAGE_KEY,
   DEFAULT_ACTIVE_ICON,
   DEFAULT_DISABLED_ICON,
   DEFAULT_ENABLED,
@@ -13,8 +15,10 @@ import {
   DEFAULT_OUTLINE_WIDTH_PX,
   DEFAULT_PULSE_DURATION_MS,
   DEFAULT_PULSE_SPREAD_PX,
+  HIT_ATTR,
   SCAN_ACTION_ID,
   SCAN_DOCK_ID,
+  STYLE_ID,
 } from '../shared/constants'
 import type { DevToolsViewAction, DevToolsViewCustomRender, PluginWithDevTools } from '@vitejs/devtools-kit'
 import type { ViteScanPluginOptions, ViteScanRuntimeConfig } from './types'
@@ -89,6 +93,144 @@ function createScanClientQuery(config: ViteScanRuntimeConfig, mode: 'action' | '
 }
 
 /**
+ * Creates a tiny page bootstrap script that restores highlight observers
+ * from persisted client config after full page reloads.
+ */
+function createAutoBootstrapScript(isActiveOnServer: boolean): string {
+  const autoFlagKey = '__VITE_SCAN_AUTO_BOOTSTRAP_ACTIVE__'
+
+  return `
+(() => {
+  try {
+    const configStorageKey = ${JSON.stringify(CONFIG_STORAGE_KEY)}
+    const activeStorageKey = ${JSON.stringify(ACTIVE_STORAGE_KEY)}
+    const isActiveOnServer = ${JSON.stringify(isActiveOnServer)}
+    const autoFlagKey = ${JSON.stringify(autoFlagKey)}
+    const styleId = ${JSON.stringify(STYLE_ID)}
+    const hitAttr = ${JSON.stringify(HIT_ATTR)}
+
+    const parseNumber = (value, fallback, minimum = 0) => {
+      const parsed = Number(value)
+      return Number.isFinite(parsed) ? Math.max(minimum, parsed) : fallback
+    }
+
+    const parseString = (value, fallback) => {
+      return typeof value === 'string' && value.trim() ? value.trim() : fallback
+    }
+
+    const isActiveInStorage = window.localStorage.getItem(activeStorageKey) === '1'
+    if (!isActiveOnServer && !isActiveInStorage)
+      return
+
+    let persisted = null
+    try {
+      const raw = window.localStorage.getItem(configStorageKey)
+      persisted = raw ? JSON.parse(raw) : null
+    }
+    catch {}
+
+    if (window[autoFlagKey])
+      return
+    window[autoFlagKey] = true
+
+    const config = {
+        highlightColor: parseString(persisted?.highlightColor, ${JSON.stringify(DEFAULT_HIGHLIGHT_COLOR)}),
+        glowColor: parseString(persisted?.glowColor, ${JSON.stringify(DEFAULT_GLOW_COLOR)}),
+        outlineWidthPx: parseNumber(persisted?.outlineWidthPx, ${DEFAULT_OUTLINE_WIDTH_PX}),
+        outlineOffsetPx: parseNumber(persisted?.outlineOffsetPx, ${DEFAULT_OUTLINE_OFFSET_PX}),
+        pulseDurationMs: parseNumber(persisted?.pulseDurationMs, ${DEFAULT_PULSE_DURATION_MS}, 50),
+        pulseSpreadPx: parseNumber(persisted?.pulseSpreadPx, ${DEFAULT_PULSE_SPREAD_PX}),
+    }
+
+    const styles = [
+      '[' + hitAttr + '] {',
+      '  outline: ' + config.outlineWidthPx + 'px solid ' + config.highlightColor + ' !important;',
+      '  outline-offset: ' + config.outlineOffsetPx + 'px;',
+      '  animation: vite-scan-pulse ' + config.pulseDurationMs + 'ms ease-out;',
+      '}',
+      '@keyframes vite-scan-pulse {',
+      '  0% { box-shadow: 0 0 0 0 ' + config.glowColor + '; }',
+      '  100% { box-shadow: 0 0 0 ' + config.pulseSpreadPx + 'px transparent; }',
+      '}',
+    ].join('\\n')
+
+    let style = document.getElementById(styleId)
+    if (!style) {
+      style = document.createElement('style')
+      style.id = styleId
+      ;(document.head || document.documentElement).appendChild(style)
+    }
+    style.textContent = styles
+
+    const markHit = (element) => {
+      element.setAttribute(hitAttr, '')
+      window.setTimeout(() => {
+        element.removeAttribute(hitAttr)
+      }, config.pulseDurationMs)
+    }
+
+    const observer = new MutationObserver((records) => {
+      const targets = new Set()
+
+      for (const record of records) {
+        if (record.type === 'attributes') {
+          if (record.attributeName === hitAttr)
+            continue
+
+          targets.add(record.target)
+          continue
+        }
+
+        if (record.type === 'characterData' && record.target.parentElement)
+          targets.add(record.target.parentElement)
+
+        for (const node of record.addedNodes) {
+          if (node instanceof Element)
+            targets.add(node)
+          else if (node.nodeType === Node.TEXT_NODE && record.target instanceof Element)
+            targets.add(record.target)
+        }
+      }
+
+      for (const element of targets) {
+        if (element instanceof Element)
+          markHit(element)
+      }
+    })
+
+    const start = () => {
+      if (!document.documentElement)
+        return
+
+      observer.observe(document.documentElement, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        characterData: true,
+      })
+    }
+
+    if (document.documentElement)
+      start()
+    else
+      window.addEventListener('DOMContentLoaded', start, { once: true })
+
+    window.addEventListener('pagehide', () => {
+      observer.disconnect()
+      for (const element of document.querySelectorAll('[' + hitAttr + ']'))
+        element.removeAttribute(hitAttr)
+
+      window[autoFlagKey] = false
+    }, { once: true })
+  }
+  catch {
+    // Keep runtime resilient when localStorage is unavailable or malformed.
+  }
+})()
+  `
+}
+
+/**
  * Creates the action dock entry used to start/stop scanning.
  */
 function createActionEntry(clientScript: string, config: ViteScanRuntimeConfig, isActive: boolean): DevToolsViewAction {
@@ -141,8 +283,23 @@ export function createViteScanPlugin(options: ViteScanPluginOptions = {}): Plugi
     activeIcon: options.activeIcon,
   })
 
+  let isActive = false
+
   return {
     name: 'vite-scan-devtools-plugin',
+    apply: 'serve',
+    transformIndexHtml() {
+      return {
+        tags: [
+          {
+            tag: 'script',
+            attrs: { type: 'module' },
+            injectTo: 'head',
+            children: createAutoBootstrapScript(isActive),
+          },
+        ],
+      }
+    },
     devtools: {
       capabilities: {
         dev: {
@@ -161,7 +318,6 @@ export function createViteScanPlugin(options: ViteScanPluginOptions = {}): Plugi
         const resolvedScanScript = scanScript
 
         let config = initialConfig
-        let isActive = false
         let actionEntry = createActionEntry(resolvedScanScript, config, isActive)
         let panelEntry = createPanelEntry(resolvedScanScript, config, isActive)
 

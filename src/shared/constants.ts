@@ -18,6 +18,10 @@ export const DEFAULT_PULSE_SPREAD_PX = 10
 
 /** Global window key that stores the current scan session. */
 export const SESSION_KEY = '__VITE_SCAN_SESSION__'
+/** localStorage key for persisted scan settings/config values. */
+export const CONFIG_STORAGE_KEY = '__vite_scan_client_config_v1__'
+/** localStorage key indicating scan was actively running and should resume on refresh. */
+export const ACTIVE_STORAGE_KEY = '__vite_scan_active_v1__'
 /** DOM ID of the injected runtime style tag. */
 export const STYLE_ID = '__vite_scan_overlay_styles__'
 /** Attribute used to mark recently updated elements. */

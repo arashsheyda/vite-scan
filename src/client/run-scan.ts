@@ -15,5 +15,6 @@ export default async function runViteScan(context: DockClientScriptContext): Pro
   }
 
   const config = await getRuntimeConfig(context)
+  await context.rpc.callOptional('vite-scan:update-config', config)
   await runScanAction(context, config)
 }

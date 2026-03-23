@@ -1,6 +1,8 @@
 import { ROOT_ID, SCAN_ACTION_ID, STYLE_ID } from '../shared/constants'
+import { createOverlayCSS } from '../shared/styles'
+import { getRuntimeConfig, persistClientConfig } from './config'
 import type { DockClientScriptContext } from '@vitejs/devtools-kit/client'
-import type { ViteScanRuntimeConfig } from './types'
+import type { ViteScanClientConfig } from './types'
 
 const AUTO_APPLY_DELAY_MS = 280
 const RECONCILE_RETRY_DELAY_MS = 320
@@ -15,8 +17,8 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;')
 }
 
-/** Renders settings panel HTML for the current runtime config. */
-function renderSettings(config: ViteScanRuntimeConfig): string {
+/** Renders settings panel HTML for the current config. */
+function renderSettings(config: ViteScanClientConfig): string {
   return `
     <style>
       #${ROOT_ID} {
@@ -179,44 +181,44 @@ function setSettingsStatus(root: HTMLElement, message: string): void {
     status.textContent = message
 }
 
-/** Builds overlay CSS matching the latest runtime config. */
-function createOverlayStyles(config: ViteScanRuntimeConfig): string {
-  return `
-    [data-vite-scan-hit] {
-      outline: ${config.outlineWidthPx}px solid ${config.highlightColor} !important;
-      outline-offset: ${config.outlineOffsetPx}px;
-      animation: vite-scan-pulse ${config.pulseDurationMs}ms ease-out;
-    }
-
-    @keyframes vite-scan-pulse {
-      0% { box-shadow: 0 0 0 0 ${config.glowColor}; }
-      100% { box-shadow: 0 0 0 ${config.pulseSpreadPx}px transparent; }
-    }
-  `
-}
-
 /** Refreshes existing runtime overlay style when present. */
-function refreshOverlayStyles(config: ViteScanRuntimeConfig): void {
+function refreshOverlayStyles(config: ViteScanClientConfig): void {
   const style = document.getElementById(STYLE_ID) as HTMLStyleElement | null
   if (!style)
     return
 
-  style.textContent = createOverlayStyles(config)
+  style.textContent = createOverlayCSS(config)
 }
 
 /** Starts or stops scan action based on desired enabled state. */
-async function syncEnabledState(context: DockClientScriptContext, nextEnabled: boolean): Promise<void> {
+async function syncEnabledState(
+  context: DockClientScriptContext,
+  nextEnabled: boolean,
+  forceRestartWhenActive = false,
+): Promise<void> {
   const active = await context.rpc.callOptional('vite-scan:is-active') as boolean | undefined
-  if (nextEnabled && !active)
-    await context.docks.toggleEntry(SCAN_ACTION_ID)
 
-  if (!nextEnabled && active)
+  if (nextEnabled) {
+    if (active && forceRestartWhenActive) {
+      await context.docks.toggleEntry(SCAN_ACTION_ID)
+      await context.docks.toggleEntry(SCAN_ACTION_ID)
+      return
+    }
+
+    if (!active)
+      await context.docks.toggleEntry(SCAN_ACTION_ID)
+
+    return
+  }
+
+  if (active)
     await context.docks.toggleEntry(SCAN_ACTION_ID)
 }
 
 /** Mounts interactive settings controls into the current panel element. */
 async function mountSettings(context: DockClientScriptContext, panel: HTMLDivElement): Promise<void> {
-  const config = await context.rpc.call('vite-scan:get-config') as ViteScanRuntimeConfig
+  const config = await getRuntimeConfig(context)
+  await context.rpc.call('vite-scan:update-config', config)
   panel.innerHTML = renderSettings(config)
 
   const root = panel.querySelector<HTMLElement>(`#${ROOT_ID}`)
@@ -253,7 +255,9 @@ async function mountSettings(context: DockClientScriptContext, panel: HTMLDivEle
       outlineOffsetPx: parseNumberInput(outlineOffsetPx, config.outlineOffsetPx),
       pulseDurationMs: parseNumberInput(pulseDurationMs, config.pulseDurationMs),
       pulseSpreadPx: parseNumberInput(pulseSpreadPx, config.pulseSpreadPx),
-    }) as ViteScanRuntimeConfig
+    }) as ViteScanClientConfig
+
+    persistClientConfig(next)
 
     outlineWidthPx.value = String(next.outlineWidthPx)
     outlineOffsetPx.value = String(next.outlineOffsetPx)
@@ -296,9 +300,9 @@ async function mountSettings(context: DockClientScriptContext, panel: HTMLDivEle
     })
   }
 
-  await syncEnabledState(context, config.enabled)
+  await syncEnabledState(context, config.enabled, true)
   window.setTimeout(() => {
-    void syncEnabledState(context, enabled.checked)
+    void syncEnabledState(context, enabled.checked, true)
   }, RECONCILE_RETRY_DELAY_MS)
   await refreshStatus()
 }
