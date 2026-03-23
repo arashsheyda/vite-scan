@@ -29,8 +29,11 @@
   ],
   "scripts": {
     "build": "tsdown --config-loader=tsx",
+    "changelog": "changelogen --output CHANGELOG.md",
     "play:dev": "pnpm run build && cd playground && DEBUG='vite:devtools:*' vite",
-    "prepack": "pnpm run build"
+    "prepack": "pnpm run build",
+    "release": "changelogen --release --push --clean",
+    "release:gh": "changelogen gh release"
   },
   "peerDependencies": {
     "@vitejs/devtools": ">=0.1.3",
@@ -41,6 +44,7 @@
     "@types/node": "^25.5.0",
     "@vitejs/devtools": "latest",
     "@vitejs/devtools-kit": "latest",
+    "changelogen": "^0.6.2",
     "tsdown": "^0.21.4",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
