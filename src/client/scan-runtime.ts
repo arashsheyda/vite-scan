@@ -97,6 +97,8 @@ function collectMutationTargets(records: MutationRecord[]): Set<Element> {
     for (const node of record.addedNodes) {
       if (node instanceof Element)
         targets.add(node)
+      else if (node.nodeType === Node.TEXT_NODE && record.target instanceof Element)
+        targets.add(record.target as Element)
     }
   }
 
