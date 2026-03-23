@@ -179,7 +179,7 @@ button {
   border: 0;
   border-radius: 999px;
   padding: 0.55rem 0.95rem;
-  background: #cf5f22;
+  background: #4b5d87;
   color: #fff;
   font-weight: 600;
   cursor: pointer;
@@ -197,7 +197,7 @@ button:hover {
 
 .card {
   border-radius: 12px;
-  border: 1px solid #f0d3bd;
+  border: 1px solid #d6ddea;
   background: #fff;
   padding: 0.7rem;
 }

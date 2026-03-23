@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <title>vite-scan Examples</title>
     <style>
       :root {
@@ -28,6 +29,18 @@
         max-width: 980px;
         margin: 0 auto;
         padding: 2.2rem 1.1rem 3rem;
+      }
+
+      .hero {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+      }
+
+      .hero img {
+        width: 2.1rem;
+        height: 2.1rem;
+        flex-shrink: 0;
       }
 
       h1 {
@@ -119,7 +132,10 @@
   </head>
   <body>
     <main>
-      <h1>vite-scan Framework Examples</h1>
+      <div class="hero">
+        <img src="/logo.svg" alt="Vite Scan logo" width="40" height="40" />
+        <h1>Vite Scan Framework Examples</h1>
+      </div>
       <p>
         Use this page as a jump point while running <strong>pnpm play:examples</strong>. Each card opens
         a framework-specific demo wired to the same Vite Scan DevTools plugin setup.
