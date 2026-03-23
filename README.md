@@ -1,4 +1,4 @@
-# <img src="https://github.com/arashsheyda/vite-scan/blob/main/docs/public/logo.svg" width="30" height="30" align="center" /> Vite Scan
+# <img src="https://github.com/arashsheyda/vite-scan/blob/main/examples/public/logo.svg" alt="Vite Scan Logo" width="30" height="30" align="center" /> Vite Scan
 
 A Vite DevTools plugin that scans runtime UI churn and highlights hot DOM areas, inspired by [react-scan](https://github.com/aidenybai/react-scan).
 
@@ -47,7 +47,7 @@ Settings are auto-applied at runtime from the dock page (debounced), so you no l
 
 ## Demo
 
-![Vite Scan demo](docs/public/demo.gif)
+![Vite Scan demo](examples/public/demo.gif)
 
 ## API
 
