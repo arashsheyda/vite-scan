@@ -8,6 +8,7 @@ import viteScan from '../src/node'
 
 export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
+  publicDir: fileURLToPath(new URL('./public', import.meta.url)),
   plugins: [
     react(),
     vue(),
@@ -24,6 +25,13 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      input: {
+        index: fileURLToPath(new URL('./index.html', import.meta.url)),
+        'react/index': fileURLToPath(new URL('./react/index.html', import.meta.url)),
+        'vue/index': fileURLToPath(new URL('./vue/index.html', import.meta.url)),
+        'svelte/index': fileURLToPath(new URL('./svelte/index.html', import.meta.url)),
+        'vanilla/index': fileURLToPath(new URL('./vanilla/index.html', import.meta.url)),
+      },
       devtools: {},
     },
   },

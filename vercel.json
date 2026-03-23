@@ -1,0 +1,24 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm exec vite build --config examples/vite.config.ts",
+  "outputDirectory": "examples/dist",
+  "rewrites": [
+    {
+      "source": "/react",
+      "destination": "/react/"
+    },
+    {
+      "source": "/vue",
+      "destination": "/vue/"
+    },
+    {
+      "source": "/svelte",
+      "destination": "/svelte/"
+    },
+    {
+      "source": "/vanilla",
+      "destination": "/vanilla/"
+    }
+  ]
+}
