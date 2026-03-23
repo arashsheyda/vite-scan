@@ -1,0 +1,25 @@
+/** Coerces a value to a finite number, clamped to a minimum. */
+export function sanitizeNumber(value: unknown, fallback: number, minimum = 0): number {
+  if (value == null)
+    return fallback
+
+  const num = Number(value)
+  return Number.isFinite(num) ? Math.max(minimum, num) : fallback
+}
+
+/** Returns a trimmed string value, falling back when empty or non-string. */
+export function sanitizeString(value: unknown, fallback: string): string {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback
+}
+
+/** Generates a data URI for the vite-scan logo icon with flat colors. */
+export function createLogoDataUri(frameColor: string, boltColor: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="26 26 204 204" fill="none"><g fill="${frameColor}"><path d="M224 40v40a8 8 0 0 1-16 0V48h-32a8 8 0 0 1 0-16h40a8 8 0 0 1 8 8M80 208H48v-32a8 8 0 0 0-16 0v40a8 8 0 0 0 8 8h40a8 8 0 0 0 0-16m136-40a8 8 0 0 0-8 8v32h-32a8 8 0 0 0 0 16h40a8 8 0 0 0 8-8v-40a8 8 0 0 0-8-8M40 88a8 8 0 0 0 8-8V48h32a8 8 0 0 0 0-16H40a8 8 0 0 0-8 8v40a8 8 0 0 0 8 8"/></g><path d="M25.9456 44.9383C25.2821 45.7827 23.925 45.3131 23.925 44.2403V33.9369C23.925 32.6875 22.9126 31.6751 21.6631 31.6751H10.287C9.36714 31.6751 8.83075 30.6346 9.36713 29.8871L16.8464 19.4157C17.917 17.9185 16.8464 15.8376 15.0046 15.8376H1.23731C0.317479 15.8376 -0.218913 14.7972 0.317475 14.0497L10.0134 0.4741C10.2266 0.176825 10.5692 0.000183105 10.9332 0.000183105H39.8271C40.7469 0.000183105 41.2833 1.04065 40.7469 1.78814L33.2676 12.2595C32.197 13.7567 33.2676 15.8376 35.1094 15.8376H46.4856C47.4291 15.8376 47.959 16.9255 47.3753 17.6687L25.9478 44.9404L25.9456 44.9383Z" transform="translate(68 75) scale(2.5)" fill="${boltColor}"/></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
+
+/** Generates a data URI for the vite-scan logo icon with gradient colors. */
+export function createGradientLogoDataUri(startColor: string, endColor: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="26 26 204 204" fill="none"><defs><linearGradient id="vsg" x1="48" y1="48" x2="208" y2="208" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${startColor}"/><stop offset="1" stop-color="${endColor}"/></linearGradient></defs><g fill="url(#vsg)"><path d="M224 40v40a8 8 0 0 1-16 0V48h-32a8 8 0 0 1 0-16h40a8 8 0 0 1 8 8M80 208H48v-32a8 8 0 0 0-16 0v40a8 8 0 0 0 8 8h40a8 8 0 0 0 0-16m136-40a8 8 0 0 0-8 8v32h-32a8 8 0 0 0 0 16h40a8 8 0 0 0 8-8v-40a8 8 0 0 0-8-8M40 88a8 8 0 0 0 8-8V48h32a8 8 0 0 0 0-16H40a8 8 0 0 0-8 8v40a8 8 0 0 0 8 8"/></g><path d="M25.9456 44.9383C25.2821 45.7827 23.925 45.3131 23.925 44.2403V33.9369C23.925 32.6875 22.9126 31.6751 21.6631 31.6751H10.287C9.36714 31.6751 8.83075 30.6346 9.36713 29.8871L16.8464 19.4157C17.917 17.9185 16.8464 15.8376 15.0046 15.8376H1.23731C0.317479 15.8376 -0.218913 14.7972 0.317475 14.0497L10.0134 0.4741C10.2266 0.176825 10.5692 0.000183105 10.9332 0.000183105H39.8271C40.7469 0.000183105 41.2833 1.04065 40.7469 1.78814L33.2676 12.2595C32.197 13.7567 33.2676 15.8376 35.1094 15.8376H46.4856C47.4291 15.8376 47.959 16.9255 47.3753 17.6687L25.9478 44.9404L25.9456 44.9383Z" transform="translate(68 75) scale(2.5)" fill="url(#vsg)"/></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}

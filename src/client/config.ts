@@ -7,22 +7,9 @@ import {
   DEFAULT_PULSE_DURATION_MS,
   DEFAULT_PULSE_SPREAD_PX,
 } from '../shared/constants'
+import { sanitizeNumber, sanitizeString } from '../shared/utils'
 import type { DockClientScriptContext } from '@vitejs/devtools-kit/client'
 import type { ViteScanClientConfig, ViteScanRuntimeConfig } from '../shared/types'
-
-/** Coerces a value to a finite number, clamped to a minimum. Works with strings, numbers, null, and undefined. */
-function sanitizeNumber(value: unknown, fallback: number, minimum = 0): number {
-  if (value == null)
-    return fallback
-
-  const num = Number(value)
-  return Number.isFinite(num) ? Math.max(minimum, num) : fallback
-}
-
-/** Returns a trimmed string value, falling back when empty or non-string. */
-function sanitizeString(value: unknown, fallback: string): string {
-  return typeof value === 'string' && value.trim() ? value.trim() : fallback
-}
 
 /** Parses a boolean from a string (`true`/`false`) with fallback support. */
 function parseBoolean(value: string | null, fallback: boolean): boolean {

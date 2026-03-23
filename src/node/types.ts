@@ -1,12 +1,7 @@
 import type { ViteScanRuntimeConfig } from '../shared/types'
 
 /** Optional plugin options provided in vite.config.ts. */
-export interface ViteScanPluginOptions {
-  /** Dock icon when idle (Iconify name). */
-  inactiveIcon?: string
-  /** Dock icon while a scan is active (Iconify name). */
-  activeIcon?: string
-}
+export interface ViteScanPluginOptions extends Partial<ViteScanRuntimeConfig> {}
 
 declare module '@vitejs/devtools-kit' {
   interface DevToolsRpcServerFunctions {

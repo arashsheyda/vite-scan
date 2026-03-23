@@ -1,4 +1,5 @@
 import type { ViteScanClientConfig } from '../shared/types'
+export type { ViteScanClientConfig } from '../shared/types'
 
 /** A highlight target — either a full Element or an individual Text node. */
 export type HighlightTarget = Element | Text
