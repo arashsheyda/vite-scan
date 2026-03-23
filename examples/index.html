@@ -42,6 +42,16 @@
         max-width: 52rem;
       }
 
+      .note {
+        margin-top: 0.9rem;
+        padding: 0.72rem 0.86rem;
+        border-radius: 12px;
+        border: 1px solid rgba(25, 36, 57, 0.14);
+        background: rgba(255, 255, 255, 0.72);
+        font-size: 0.95rem;
+        line-height: 1.45;
+      }
+
       .grid {
         margin-top: 1.4rem;
         display: grid;
@@ -113,6 +123,10 @@
       <p>
         Use this page as a jump point while running <strong>pnpm play:examples</strong>. Each card opens
         a framework-specific demo wired to the same Vite Scan DevTools plugin setup.
+      </p>
+      <p class="note">
+        Production note: on deployed builds (for example Vercel), Vite DevTools UI is not available,
+        but these demos still run Vite Scan highlights via bootstrap mode.
       </p>
 
       <section class="grid" aria-label="Examples">

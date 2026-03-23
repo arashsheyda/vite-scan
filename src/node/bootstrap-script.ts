@@ -41,6 +41,10 @@ export function createBootstrapScript(
       return typeof value === 'string' && value.trim() ? value.trim() : fallback
     }
 
+    const parseBoolean = (value, fallback) => {
+      return typeof value === 'boolean' ? value : fallback
+    }
+
     const isActiveInStorage = window.localStorage.getItem(activeStorageKey) === '1'
     if (!isActiveOnServer && !isActiveInStorage)
       return
@@ -51,6 +55,10 @@ export function createBootstrapScript(
       persisted = raw ? JSON.parse(raw) : null
     }
     catch {}
+
+    const isEnabled = parseBoolean(persisted?.enabled, true)
+    if (!isEnabled)
+      return
 
     if (window[autoFlagKey])
       return

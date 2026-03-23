@@ -16,7 +16,9 @@ export default defineConfig({
     DevTools({
       builtinDevTools: false,
     }),
-    viteScan(),
+    viteScan({
+      enableInProduction: true,
+    }),
   ],
   define: {
     __VUE_OPTIONS_API__: true,

@@ -1,7 +1,14 @@
 import type { ViteScanRuntimeConfig } from '../shared/types'
 
 /** Optional plugin options provided in vite.config.ts. */
-export interface ViteScanPluginOptions extends Partial<ViteScanRuntimeConfig> {}
+export interface ViteScanPluginOptions extends Partial<ViteScanRuntimeConfig> {
+  /**
+   * Enables scan bootstrap in production builds (without Vite DevTools UI).
+   * Useful for deployed examples where users should still see render highlights.
+   * @default false
+   */
+  enableInProduction?: boolean
+}
 
 declare module '@vitejs/devtools-kit' {
   interface DevToolsRpcServerFunctions {

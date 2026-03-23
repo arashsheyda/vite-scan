@@ -115,13 +115,21 @@ function createPanelEntry(clientScript: string, config: ViteScanRuntimeConfig, i
  * Registers the Vite Scan DevTools plugin, docks, and RPC handlers.
  */
 export function createViteScanPlugin(options: ViteScanPluginOptions = {}): PluginWithDevTools {
-  const initialConfig = sanitizeConfig(options)
+  const { enableInProduction = false, ...runtimeOptions } = options
+  const initialConfig = sanitizeConfig(runtimeOptions)
+  let command: 'serve' | 'build' = 'serve'
   let isActive = false
 
   return {
     name: 'vite-scan-devtools-plugin',
-    apply: 'serve',
+    apply(_config, env) {
+      return env.command === 'serve' || (env.command === 'build' && enableInProduction)
+    },
+    configResolved(resolvedConfig) {
+      command = resolvedConfig.command
+    },
     transformIndexHtml() {
+      const shouldAutoBootstrap = isActive || (command === 'build' && enableInProduction && initialConfig.enabled)
       return {
         tags: [
           {
@@ -129,7 +137,7 @@ export function createViteScanPlugin(options: ViteScanPluginOptions = {}): Plugi
             attrs: { type: 'module' },
             injectTo: 'head',
             children: createBootstrapScript(
-              isActive,
+              shouldAutoBootstrap,
               CONFIG_STORAGE_KEY,
               ACTIVE_STORAGE_KEY,
             ),
