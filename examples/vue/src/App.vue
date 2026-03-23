@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
+import Card from './components/Card.vue'
+import TextPreview from './components/TextPreview.vue'
 
 const seed = ref(0)
 const autopilot = ref(false)
@@ -63,6 +65,7 @@ onBeforeUnmount(() => {
         <strong>Vite Scan</strong> to highlight.
       </p>
     </header>
+    <TextPreview />
 
     <section class="toolbar">
       <button type="button" @click="shuffle">
@@ -77,11 +80,7 @@ onBeforeUnmount(() => {
     </section>
 
     <section class="stack">
-      <article v-for="card in cards" :key="card.id" class="panel">
-        <span class="label">{{ card.title }}</span>
-        <strong>{{ card.rate }}%</strong>
-        <p>Drift {{ card.drift }}</p>
-      </article>
+      <Card v-for="card in cards" :key="card.id" :card="card" class="panel" />
     </section>
   </main>
 </template>

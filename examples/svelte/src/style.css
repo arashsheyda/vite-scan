@@ -79,6 +79,54 @@ h1 {
   margin-bottom: 1.4rem;
 }
 
+.input-section {
+  margin-bottom: 1.4rem;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid rgba(224, 90, 44, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  font: inherit;
+  font-size: 0.95rem;
+  color: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input::placeholder {
+  color: rgba(23, 29, 67, 0.4);
+}
+
+.input:focus {
+  border-color: #e05a2c;
+  box-shadow: 0 0 0 3px rgba(224, 90, 44, 0.12);
+}
+
+.input-value {
+  display: block;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 10px;
+  background: #fff0e5;
+  font-family: "JetBrains Mono", "SF Mono", monospace;
+  font-size: 0.88rem;
+  color: #9f4d22;
+  min-height: 1.6rem;
+  word-break: break-word;
+}
+
+.input-value.placeholder {
+  color: rgba(159, 77, 34, 0.4);
+  font-style: italic;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));

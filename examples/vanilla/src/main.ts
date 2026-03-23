@@ -1,4 +1,5 @@
 import './style.css'
+import './text-preview'
 
 const app = document.querySelector<HTMLDivElement>('#app')
 if (!app)
@@ -14,6 +15,8 @@ app.innerHTML = `
         <strong>Vite Scan</strong> behaves without any virtual DOM in the way.
       </p>
     </header>
+
+    <text-preview></text-preview>
 
     <section class="toolbar">
       <button id="shuffle" type="button">Shuffle cards</button>
