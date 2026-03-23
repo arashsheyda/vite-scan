@@ -1,4 +1,5 @@
 import {
+  CONFIG_STORAGE_KEY,
   DEFAULT_GLOW_COLOR,
   DEFAULT_HIGHLIGHT_COLOR,
   DEFAULT_OUTLINE_OFFSET_PX,
@@ -9,22 +10,22 @@ import {
 import type { DockClientScriptContext } from '@vitejs/devtools-kit/client'
 import type { ViteScanClientConfig, ViteScanRuntimeConfig } from './types'
 
-/** Parses a finite number from query params and clamps it to a minimum value. */
-function parsePositiveNumber(value: string | null, fallback: number, minimum = 0): number {
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? Math.max(minimum, parsed) : fallback
-}
-
-/** Returns a trimmed string value, falling back when empty. */
-function parseString(value: string | null, fallback: string): string {
-  return value?.trim() || fallback
-}
-
-/** Parses a boolean from query params (`true`/`false`) with fallback support. */
-function parseBoolean(value: string | null, fallback: boolean): boolean {
+/** Coerces a value to a finite number, clamped to a minimum. Works with strings, numbers, null, and undefined. */
+function sanitizeNumber(value: unknown, fallback: number, minimum = 0): number {
   if (value == null)
     return fallback
 
+  const num = Number(value)
+  return Number.isFinite(num) ? Math.max(minimum, num) : fallback
+}
+
+/** Returns a trimmed string value, falling back when empty or non-string. */
+function sanitizeString(value: unknown, fallback: string): string {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback
+}
+
+/** Parses a boolean from a string (`true`/`false`) with fallback support. */
+function parseBoolean(value: string | null, fallback: boolean): boolean {
   if (value === 'true')
     return true
 
@@ -32,6 +33,11 @@ function parseBoolean(value: string | null, fallback: boolean): boolean {
     return false
 
   return fallback
+}
+
+/** Returns true when localStorage is available. */
+function canUseStorage(): boolean {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
 }
 
 /** Resolves the script mode from import URL query params. */
@@ -46,31 +52,69 @@ function getConfigFromImportMetaUrl(): ViteScanClientConfig {
 
   return {
     enabled: parseBoolean(params.get('enabled'), true),
-    highlightColor: parseString(params.get('highlightColor'), DEFAULT_HIGHLIGHT_COLOR),
-    glowColor: parseString(params.get('glowColor'), DEFAULT_GLOW_COLOR),
-    outlineWidthPx: parsePositiveNumber(params.get('outlineWidthPx'), DEFAULT_OUTLINE_WIDTH_PX),
-    outlineOffsetPx: parsePositiveNumber(params.get('outlineOffsetPx'), DEFAULT_OUTLINE_OFFSET_PX),
-    pulseDurationMs: parsePositiveNumber(params.get('pulseDurationMs'), DEFAULT_PULSE_DURATION_MS, 50),
-    pulseSpreadPx: parsePositiveNumber(params.get('pulseSpreadPx'), DEFAULT_PULSE_SPREAD_PX),
+    highlightColor: sanitizeString(params.get('highlightColor'), DEFAULT_HIGHLIGHT_COLOR),
+    glowColor: sanitizeString(params.get('glowColor'), DEFAULT_GLOW_COLOR),
+    outlineWidthPx: sanitizeNumber(params.get('outlineWidthPx'), DEFAULT_OUTLINE_WIDTH_PX),
+    outlineOffsetPx: sanitizeNumber(params.get('outlineOffsetPx'), DEFAULT_OUTLINE_OFFSET_PX),
+    pulseDurationMs: sanitizeNumber(params.get('pulseDurationMs'), DEFAULT_PULSE_DURATION_MS, 50),
+    pulseSpreadPx: sanitizeNumber(params.get('pulseSpreadPx'), DEFAULT_PULSE_SPREAD_PX),
   }
 }
 
-/**
- * Gets runtime config from server RPC, falling back to import URL params.
- */
-export async function getRuntimeConfig(context: DockClientScriptContext): Promise<ViteScanClientConfig> {
-  const fallback = getConfigFromImportMetaUrl()
-  const config = await context.rpc.callOptional('vite-scan:get-config') as ViteScanRuntimeConfig | undefined
-  if (!config)
+/** Reads persisted client config from localStorage, returning null when unavailable or invalid. */
+function readPersistedConfig(): Partial<ViteScanClientConfig> | null {
+  if (!canUseStorage())
+    return null
+
+  try {
+    const raw = window.localStorage.getItem(CONFIG_STORAGE_KEY)
+    if (!raw)
+      return null
+
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : null
+  }
+  catch {
+    return null
+  }
+}
+
+/** Merges persisted config over a fallback baseline, re-sanitizing every value. */
+function mergePersistedConfig(fallback: ViteScanClientConfig): ViteScanClientConfig {
+  const persisted = readPersistedConfig()
+  if (!persisted)
     return fallback
 
   return {
-    enabled: config.enabled,
-    highlightColor: config.highlightColor,
-    glowColor: config.glowColor,
-    outlineWidthPx: config.outlineWidthPx,
-    outlineOffsetPx: config.outlineOffsetPx,
-    pulseDurationMs: config.pulseDurationMs,
-    pulseSpreadPx: config.pulseSpreadPx,
+    enabled: typeof persisted.enabled === 'boolean' ? persisted.enabled : fallback.enabled,
+    highlightColor: sanitizeString(persisted.highlightColor, fallback.highlightColor),
+    glowColor: sanitizeString(persisted.glowColor, fallback.glowColor),
+    outlineWidthPx: sanitizeNumber(persisted.outlineWidthPx, fallback.outlineWidthPx),
+    outlineOffsetPx: sanitizeNumber(persisted.outlineOffsetPx, fallback.outlineOffsetPx),
+    pulseDurationMs: sanitizeNumber(persisted.pulseDurationMs, fallback.pulseDurationMs, 50),
+    pulseSpreadPx: sanitizeNumber(persisted.pulseSpreadPx, fallback.pulseSpreadPx),
   }
+}
+
+/** Persists client config to localStorage so settings survive reloads. */
+export function persistClientConfig(config: ViteScanClientConfig): void {
+  if (!canUseStorage())
+    return
+
+  try {
+    window.localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config))
+  }
+  catch {
+    // Ignore storage failures (private mode / quota).
+  }
+}
+
+/** Resolves config from server RPC merged with persisted overrides. */
+export async function getRuntimeConfig(context: DockClientScriptContext): Promise<ViteScanClientConfig> {
+  const fallback = mergePersistedConfig(getConfigFromImportMetaUrl())
+  const config = await context.rpc.callOptional('vite-scan:get-config') as ViteScanRuntimeConfig | undefined
+
+  const merged = config ? mergePersistedConfig(config) : fallback
+  persistClientConfig(merged)
+  return merged
 }

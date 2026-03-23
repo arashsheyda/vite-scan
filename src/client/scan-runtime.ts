@@ -1,6 +1,20 @@
-import { HIT_ATTR, SESSION_KEY, STYLE_ID } from '../shared/constants'
+import { ACTIVE_STORAGE_KEY, HIT_ATTR, SESSION_KEY, STYLE_ID } from '../shared/constants'
+import { createOverlayCSS } from '../shared/styles'
 import type { ViteScanClientConfig, ViteScanSession } from './types'
 import type { DockClientScriptContext } from '@vitejs/devtools-kit/client'
+
+/** Persists whether scan should auto-resume on full page refresh. */
+function setActiveStorage(isActive: boolean): void {
+  try {
+    if (isActive)
+      window.localStorage.setItem(ACTIVE_STORAGE_KEY, '1')
+    else
+      window.localStorage.removeItem(ACTIVE_STORAGE_KEY)
+  }
+  catch {
+    // Ignore storage failures and continue with in-memory runtime behavior.
+  }
+}
 
 /** Reads the current scan session from a global window slot. */
 function getSession(): ViteScanSession | null {
@@ -12,25 +26,9 @@ function setSession(session: ViteScanSession | null): void {
   ;(window as any)[SESSION_KEY] = session
 }
 
-/** Generates runtime CSS for highlight and pulse effects. */
-function createStylesText(config: ViteScanClientConfig): string {
-  return `
-    [${HIT_ATTR}] {
-      outline: ${config.outlineWidthPx}px solid ${config.highlightColor} !important;
-      outline-offset: ${config.outlineOffsetPx}px;
-      animation: vite-scan-pulse ${config.pulseDurationMs}ms ease-out;
-    }
-
-    @keyframes vite-scan-pulse {
-      0% { box-shadow: 0 0 0 0 ${config.glowColor}; }
-      100% { box-shadow: 0 0 0 ${config.pulseSpreadPx}px transparent; }
-    }
-  `
-}
-
 /** Injects or updates runtime styles for scan highlighting. */
 function ensureStyles(config: ViteScanClientConfig): void {
-  const styleText = createStylesText(config)
+  const styleText = createOverlayCSS(config)
   const existing = document.getElementById(STYLE_ID) as HTMLStyleElement | null
 
   if (existing) {
@@ -127,6 +125,7 @@ async function stopSession(context: DockClientScriptContext): Promise<void> {
   session.mutationObserver?.disconnect()
   session.performanceObserver?.disconnect()
   clearHitMarkers()
+  setActiveStorage(false)
   await setDockActiveState(context, false)
 
   const elapsed = Date.now() - session.startedAt
@@ -173,6 +172,7 @@ export async function runScanAction(context: DockClientScriptContext, config: Vi
   }
 
   if (!config.enabled) {
+    setActiveStorage(false)
     await context.logs.add({
       id: 'vite-scan:disabled',
       message: 'vite-scan is disabled',
@@ -258,12 +258,13 @@ export async function runScanAction(context: DockClientScriptContext, config: Vi
     activeSession.mutationObserver?.disconnect()
     activeSession.performanceObserver?.disconnect()
     clearHitMarkers()
-    void setDockActiveState(context, false)
+    // Preserve active intent across refresh; panel reconcile will restart observers if needed.
     setSession(null)
   }
   window.addEventListener('pagehide', session.pageHideHandler)
 
   setSession(session)
+  setActiveStorage(true)
   await setDockActiveState(context, true)
 
   await context.logs.add({
