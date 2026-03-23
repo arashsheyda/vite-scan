@@ -1,14 +1,13 @@
 import { DevTools } from '@vitejs/devtools'
+import react from '@vitejs/plugin-react'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
-import viteScan from '../src/node'
+import viteScan from '../../src/node'
 
 export default defineConfig({
-  define: {
-    __VUE_OPTIONS_API__: true,
-    __VUE_PROD_DEVTOOLS__: false,
-    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
-  },
+  root: fileURLToPath(new URL('.', import.meta.url)),
   plugins: [
+    react(),
     DevTools({
       builtinDevTools: false,
     }),

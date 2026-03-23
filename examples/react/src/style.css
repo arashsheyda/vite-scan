@@ -1,0 +1,126 @@
+:root {
+  color-scheme: light;
+  font-family: "Satoshi", "Avenir Next", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(107, 72, 255, 0.16), transparent 22%),
+    radial-gradient(circle at 80% 10%, rgba(0, 148, 255, 0.14), transparent 24%),
+    linear-gradient(180deg, #f5f6ff 0%, #fcfdff 45%, #eef2ff 100%);
+  color: #2b1b14;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  background: #3254ff;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: rgba(43, 27, 20, 0.08);
+  color: inherit;
+}
+
+button.secondary.active {
+  background: #171d43;
+  color: #fff6ee;
+}
+
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.hero {
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.78rem;
+  color: #4d5fd1;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.1rem, 5vw, 3.8rem);
+  line-height: 0.95;
+}
+
+.copy {
+  max-width: 42rem;
+  margin: 0.9rem 0 0;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.4rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
+.card {
+  min-height: 145px;
+  border-radius: 24px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(50, 84, 255, 0.12);
+  box-shadow: 0 20px 70px rgba(40, 63, 160, 0.08);
+}
+
+.card strong {
+  display: block;
+  margin-top: 1rem;
+  font-size: 2rem;
+}
+
+.card p {
+  margin: 0.35rem 0 0;
+  font-family: "JetBrains Mono", "SF Mono", monospace;
+}
+
+.chip {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.35rem 0.6rem;
+  background: #e8edff;
+  color: #3550df;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding-inline: 1rem;
+  }
+
+  h1 {
+    line-height: 1.02;
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}

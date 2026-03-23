@@ -62,6 +62,23 @@ pnpm build
 pnpm play:dev
 ```
 
+To launch a single hub page with links to all framework demos:
+
+```bash
+pnpm play:examples
+```
+
+Additional working examples are available for each framework:
+
+```bash
+pnpm play:vanilla
+pnpm play:react
+pnpm play:vue
+pnpm play:svelte
+```
+
+Each example opens a small high-churn UI so you can run `Vite Scan` from DevTools and compare how React, Vue, Svelte, and vanilla DOM updates show up.
+
 ## License
 
 MIT License. See [LICENSE](./LICENSE) for details.

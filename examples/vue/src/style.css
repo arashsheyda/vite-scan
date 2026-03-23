@@ -1,0 +1,135 @@
+:root {
+  color-scheme: light;
+  font-family: "Switzer", "Avenir Next", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(92, 208, 196, 0.2), transparent 22%),
+    radial-gradient(circle at 85% 10%, rgba(31, 94, 77, 0.14), transparent 26%),
+    linear-gradient(180deg, #effcf8 0%, #fbfffd 45%, #e8f3ef 100%);
+  color: #103229;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  background: #12806a;
+  color: #effcf8;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: rgba(16, 50, 41, 0.08);
+  color: inherit;
+}
+
+button.secondary.active {
+  background: #103229;
+  color: #effcf8;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.hero {
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.78rem;
+  color: #19816a;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4.5vw, 3.6rem);
+  line-height: 0.98;
+}
+
+.copy {
+  max-width: 44rem;
+  margin: 0.9rem 0 0;
+  line-height: 1.65;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.4rem;
+}
+
+.stack {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.85rem;
+}
+
+.panel {
+  position: relative;
+  overflow: hidden;
+  min-height: 150px;
+  border-radius: 24px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(18, 128, 106, 0.12);
+  box-shadow: 0 20px 70px rgba(16, 50, 41, 0.08);
+}
+
+.panel::after {
+  content: '';
+  position: absolute;
+  inset: auto -20% -30% 45%;
+  height: 130px;
+  background: radial-gradient(circle, rgba(18, 128, 106, 0.15), transparent 65%);
+}
+
+.label {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.35rem 0.6rem;
+  background: #e7fbf6;
+  color: #11705d;
+  font-size: 0.82rem;
+}
+
+.panel strong {
+  display: block;
+  margin-top: 1rem;
+  font-size: 2rem;
+}
+
+.panel p {
+  margin: 0.35rem 0 0;
+  font-family: "JetBrains Mono", "SF Mono", monospace;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding-inline: 1rem;
+  }
+
+  .stack {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
