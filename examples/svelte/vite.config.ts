@@ -11,7 +11,9 @@ export default defineConfig({
     DevTools({
       builtinDevTools: false,
     }),
-    viteScan(),
+    viteScan({
+      enableInProduction: true,
+    }),
   ],
   build: {
     rollupOptions: {
