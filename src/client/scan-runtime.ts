@@ -1,5 +1,5 @@
 import { ACTIVE_STORAGE_KEY, HIT_ATTR, SESSION_KEY, STYLE_ID } from '../shared/constants'
-import { createOverlayCSS } from '../shared/styles'
+import { createCanvasOverlay } from './canvas-overlay'
 import type { ViteScanClientConfig, ViteScanSession } from './types'
 import type { DockClientScriptContext } from '@vitejs/devtools-kit/client'
 
@@ -26,33 +26,16 @@ function setSession(session: ViteScanSession | null): void {
   ;(window as any)[SESSION_KEY] = session
 }
 
-/** Injects or updates runtime styles for scan highlighting. */
-function ensureStyles(config: ViteScanClientConfig): void {
-  const styleText = createOverlayCSS(config)
-  const existing = document.getElementById(STYLE_ID) as HTMLStyleElement | null
-
-  if (existing) {
-    existing.textContent = styleText
-    return
-  }
-
-  const style = document.createElement('style')
-  style.id = STYLE_ID
-  style.textContent = styleText
-  document.head.appendChild(style)
+/** Suppresses the CSS-based bootstrap overlay when the canvas overlay takes over. */
+function clearBootstrapOverlay(): void {
+  document.getElementById(STYLE_ID)?.remove()
+  for (const el of document.querySelectorAll(`[${HIT_ATTR}]`))
+    el.removeAttribute(HIT_ATTR)
 }
 
 /** Mirrors active state to the node-side plugin for dock updates. */
 async function setDockActiveState(context: DockClientScriptContext, active: boolean): Promise<void> {
   await context.rpc.callOptional('vite-scan:set-active', active)
-}
-
-/** Marks an element as recently updated and clears the mark after pulse duration. */
-function markElementHit(element: Element, pulseDurationMs: number): void {
-  element.setAttribute(HIT_ATTR, '')
-  window.setTimeout(() => {
-    element.removeAttribute(HIT_ATTR)
-  }, pulseDurationMs)
 }
 
 /** Creates a compact selector-like label for log summaries. */
@@ -103,12 +86,6 @@ function collectMutationTargets(records: MutationRecord[]): Set<Element> {
   return targets
 }
 
-/** Removes all active hit markers from the document. */
-function clearHitMarkers(): void {
-  for (const element of document.querySelectorAll(`[${HIT_ATTR}]`))
-    element.removeAttribute(HIT_ATTR)
-}
-
 /** Stops the current session, emits summary logs, and clears state/overlays. */
 async function stopSession(context: DockClientScriptContext): Promise<void> {
   const session = getSession()
@@ -124,7 +101,7 @@ async function stopSession(context: DockClientScriptContext): Promise<void> {
 
   session.mutationObserver?.disconnect()
   session.performanceObserver?.disconnect()
-  clearHitMarkers()
+  session.canvasOverlay?.destroy()
   setActiveStorage(false)
   await setDockActiveState(context, false)
 
@@ -184,12 +161,14 @@ export async function runScanAction(context: DockClientScriptContext, config: Vi
     return
   }
 
-  ensureStyles(config)
+  clearBootstrapOverlay()
+  const overlay = createCanvasOverlay(config)
 
   const session: ViteScanSession = {
     active: true,
     startedAt: Date.now(),
     pageHideHandler: null,
+    canvasOverlay: overlay,
     mutationObserver: null,
     performanceObserver: null,
     updates: new Map(),
@@ -202,7 +181,7 @@ export async function runScanAction(context: DockClientScriptContext, config: Vi
     const targets = collectMutationTargets(records)
 
     for (const element of targets) {
-      markElementHit(element, config.pulseDurationMs)
+      overlay.addHighlight(element)
       session.updates.set(element, (session.updates.get(element) ?? 0) + 1)
     }
   })
@@ -257,7 +236,7 @@ export async function runScanAction(context: DockClientScriptContext, config: Vi
     activeSession.active = false
     activeSession.mutationObserver?.disconnect()
     activeSession.performanceObserver?.disconnect()
-    clearHitMarkers()
+    activeSession.canvasOverlay?.destroy()
     // Preserve active intent across refresh; panel reconcile will restart observers if needed.
     setSession(null)
   }
@@ -280,4 +259,9 @@ export async function runScanAction(context: DockClientScriptContext, config: Vi
       `Pulse duration: ${config.pulseDurationMs}ms`,
     ].join('\n'),
   })
+}
+
+/** Forwards a config update to the active canvas overlay, if one exists. */
+export function updateActiveOverlayConfig(config: ViteScanClientConfig): void {
+  getSession()?.canvasOverlay?.updateConfig(config)
 }

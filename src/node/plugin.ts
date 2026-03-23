@@ -35,29 +35,9 @@ function resolveClientScript(): string | undefined {
   return paths.find(path => fs.existsSync(path))
 }
 
-/**
- * Coerces a value to a finite number and clamps it to a minimum.
- */
-function sanitizePositiveNumber(value: number | undefined, fallback: number, minimum = 0): number {
-  if (value == null || !Number.isFinite(value))
-    return fallback
+const num = (v: any, d: number, min = 0) => Number.isFinite(v) ? Math.max(min, v) : d
 
-  return Math.max(minimum, value)
-}
-
-/**
- * Returns a trimmed color string or a fallback when empty.
- */
-function sanitizeColor(value: string | undefined, fallback: string): string {
-  return value?.trim() || fallback
-}
-
-/**
- * Returns a trimmed icon name or a fallback when empty.
- */
-function sanitizeIcon(value: string | undefined, fallback: string): string {
-  return value?.trim() || fallback
-}
+const str = (v: any, d: string) => typeof v === 'string' && v.trim() ? v.trim() : d
 
 /**
  * Normalizes partial runtime config into a fully safe runtime config object.
@@ -65,14 +45,14 @@ function sanitizeIcon(value: string | undefined, fallback: string): string {
 function sanitizeConfig(config: Partial<ViteScanRuntimeConfig>): ViteScanRuntimeConfig {
   return {
     enabled: config.enabled ?? DEFAULT_ENABLED,
-    highlightColor: sanitizeColor(config.highlightColor, DEFAULT_HIGHLIGHT_COLOR),
-    glowColor: sanitizeColor(config.glowColor, DEFAULT_GLOW_COLOR),
-    outlineWidthPx: sanitizePositiveNumber(config.outlineWidthPx, DEFAULT_OUTLINE_WIDTH_PX),
-    outlineOffsetPx: sanitizePositiveNumber(config.outlineOffsetPx, DEFAULT_OUTLINE_OFFSET_PX),
-    pulseDurationMs: sanitizePositiveNumber(config.pulseDurationMs, DEFAULT_PULSE_DURATION_MS, 50),
-    pulseSpreadPx: sanitizePositiveNumber(config.pulseSpreadPx, DEFAULT_PULSE_SPREAD_PX),
-    inactiveIcon: sanitizeIcon(config.inactiveIcon, DEFAULT_INACTIVE_ICON),
-    activeIcon: sanitizeIcon(config.activeIcon, DEFAULT_ACTIVE_ICON),
+    highlightColor: str(config.highlightColor, DEFAULT_HIGHLIGHT_COLOR),
+    glowColor: str(config.glowColor, DEFAULT_GLOW_COLOR),
+    outlineWidthPx: num(config.outlineWidthPx, DEFAULT_OUTLINE_WIDTH_PX),
+    outlineOffsetPx: num(config.outlineOffsetPx, DEFAULT_OUTLINE_OFFSET_PX),
+    pulseDurationMs: num(config.pulseDurationMs, DEFAULT_PULSE_DURATION_MS, 50),
+    pulseSpreadPx: num(config.pulseSpreadPx, DEFAULT_PULSE_SPREAD_PX),
+    inactiveIcon: str(config.inactiveIcon, DEFAULT_INACTIVE_ICON),
+    activeIcon: str(config.activeIcon, DEFAULT_ACTIVE_ICON),
   }
 }
 
@@ -278,11 +258,7 @@ function createPanelEntry(clientScript: string, config: ViteScanRuntimeConfig, i
  * Registers the Vite Scan DevTools plugin, docks, and RPC handlers.
  */
 export function createViteScanPlugin(options: ViteScanPluginOptions = {}): PluginWithDevTools {
-  const initialConfig = sanitizeConfig({
-    inactiveIcon: options.inactiveIcon,
-    activeIcon: options.activeIcon,
-  })
-
+  const initialConfig = sanitizeConfig(options)
   let isActive = false
 
   return {
