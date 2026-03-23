@@ -1,6 +1,31 @@
 # Changelog
 
 
+## v0.0.3
+
+[compare changes](https://github.com/arashsheyda/vite-scan/compare/v0.0.2...v0.0.3)
+
+### 🚀 Enhancements
+
+- Replace CSS outline highlighting with canvas overlay with with element highlighting and badges ([#4](https://github.com/arashsheyda/vite-scan/pull/4))
+- Add option to enable vite scan in production builds ([#5](https://github.com/arashsheyda/vite-scan/pull/5))
+
+### 🩹 Fixes
+
+- **examples:** Update layout ([40700ad](https://github.com/arashsheyda/vite-scan/commit/40700ad))
+
+### 💅 Refactors
+
+- Redesign settings UI, extract shared utils and and modularize bootstrap script ([a1932cc](https://github.com/arashsheyda/vite-scan/commit/a1932cc))
+
+### 🏡 Chore
+
+- Update docs ([b27de63](https://github.com/arashsheyda/vite-scan/commit/b27de63))
+
+### ❤️ Contributors
+
+- Arash Ari Sheyda ([@arashsheyda](https://github.com/arashsheyda))
+
 ## v0.0.2
 
 [compare changes](https://github.com/arashsheyda/vite-scan/compare/v0.0.1...v0.0.2)
