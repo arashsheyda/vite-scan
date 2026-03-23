@@ -41,6 +41,10 @@ Open Vite DevTools, open the `Vite Scan` dock page, and tweak settings.
 
 Settings are auto-applied at runtime from the dock page (debounced), so you no longer need to edit `vite.config.ts` for every tweak.
 
+## Demo
+
+![Vite Scan demo](docs/public/demo.gif)
+
 ## API
 
 ```ts
