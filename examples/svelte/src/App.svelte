@@ -1,4 +1,6 @@
 <script lang="ts">
+  import TextPreview from './TextPreview.svelte'
+
   let seed = 0
   let autopilot = false
   let autopilotTimer: number | undefined
@@ -63,6 +65,8 @@
       Trigger reactive changes and inspect which DOM islands churn under <strong>Vite Scan</strong>.
     </p>
   </header>
+
+  <TextPreview />
 
   <section class="toolbar">
     <button type="button" on:click={shuffle}>Shuffle blocks</button>

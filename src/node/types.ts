@@ -1,7 +1,5 @@
 import type { ViteScanRuntimeConfig } from '../shared/types'
 
-export type { ViteScanClientConfig, ViteScanRuntimeConfig } from '../shared/types'
-
 /** Optional plugin options provided in vite.config.ts. */
 export interface ViteScanPluginOptions {
   /** Dock icon when idle (Iconify name). */

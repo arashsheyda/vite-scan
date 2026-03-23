@@ -15,13 +15,12 @@ import {
   DEFAULT_OUTLINE_WIDTH_PX,
   DEFAULT_PULSE_DURATION_MS,
   DEFAULT_PULSE_SPREAD_PX,
-  HIT_ATTR,
   SCAN_ACTION_ID,
   SCAN_DOCK_ID,
-  STYLE_ID,
 } from '../shared/constants'
 import type { DevToolsViewAction, DevToolsViewCustomRender, PluginWithDevTools } from '@vitejs/devtools-kit'
-import type { ViteScanPluginOptions, ViteScanRuntimeConfig } from './types'
+import type { ViteScanPluginOptions } from './types'
+import type { ViteScanRuntimeConfig } from '../shared/types'
 
 /**
  * Resolves the client script path for both built and source-driven development.
@@ -35,29 +34,9 @@ function resolveClientScript(): string | undefined {
   return paths.find(path => fs.existsSync(path))
 }
 
-/**
- * Coerces a value to a finite number and clamps it to a minimum.
- */
-function sanitizePositiveNumber(value: number | undefined, fallback: number, minimum = 0): number {
-  if (value == null || !Number.isFinite(value))
-    return fallback
+const num = (v: any, d: number, min = 0) => Number.isFinite(v) ? Math.max(min, v) : d
 
-  return Math.max(minimum, value)
-}
-
-/**
- * Returns a trimmed color string or a fallback when empty.
- */
-function sanitizeColor(value: string | undefined, fallback: string): string {
-  return value?.trim() || fallback
-}
-
-/**
- * Returns a trimmed icon name or a fallback when empty.
- */
-function sanitizeIcon(value: string | undefined, fallback: string): string {
-  return value?.trim() || fallback
-}
+const str = (v: any, d: string) => typeof v === 'string' && v.trim() ? v.trim() : d
 
 /**
  * Normalizes partial runtime config into a fully safe runtime config object.
@@ -65,14 +44,14 @@ function sanitizeIcon(value: string | undefined, fallback: string): string {
 function sanitizeConfig(config: Partial<ViteScanRuntimeConfig>): ViteScanRuntimeConfig {
   return {
     enabled: config.enabled ?? DEFAULT_ENABLED,
-    highlightColor: sanitizeColor(config.highlightColor, DEFAULT_HIGHLIGHT_COLOR),
-    glowColor: sanitizeColor(config.glowColor, DEFAULT_GLOW_COLOR),
-    outlineWidthPx: sanitizePositiveNumber(config.outlineWidthPx, DEFAULT_OUTLINE_WIDTH_PX),
-    outlineOffsetPx: sanitizePositiveNumber(config.outlineOffsetPx, DEFAULT_OUTLINE_OFFSET_PX),
-    pulseDurationMs: sanitizePositiveNumber(config.pulseDurationMs, DEFAULT_PULSE_DURATION_MS, 50),
-    pulseSpreadPx: sanitizePositiveNumber(config.pulseSpreadPx, DEFAULT_PULSE_SPREAD_PX),
-    inactiveIcon: sanitizeIcon(config.inactiveIcon, DEFAULT_INACTIVE_ICON),
-    activeIcon: sanitizeIcon(config.activeIcon, DEFAULT_ACTIVE_ICON),
+    highlightColor: str(config.highlightColor, DEFAULT_HIGHLIGHT_COLOR),
+    glowColor: str(config.glowColor, DEFAULT_GLOW_COLOR),
+    outlineWidthPx: num(config.outlineWidthPx, DEFAULT_OUTLINE_WIDTH_PX),
+    outlineOffsetPx: num(config.outlineOffsetPx, DEFAULT_OUTLINE_OFFSET_PX),
+    pulseDurationMs: num(config.pulseDurationMs, DEFAULT_PULSE_DURATION_MS, 50),
+    pulseSpreadPx: num(config.pulseSpreadPx, DEFAULT_PULSE_SPREAD_PX),
+    inactiveIcon: str(config.inactiveIcon, DEFAULT_INACTIVE_ICON),
+    activeIcon: str(config.activeIcon, DEFAULT_ACTIVE_ICON),
   }
 }
 
@@ -93,11 +72,12 @@ function createScanClientQuery(config: ViteScanRuntimeConfig, mode: 'action' | '
 }
 
 /**
- * Creates a tiny page bootstrap script that restores highlight observers
- * from persisted client config after full page reloads.
+ * Creates a page bootstrap script that restores a canvas-based highlight
+ * overlay with render count badges after full page reloads.
  */
 function createAutoBootstrapScript(isActiveOnServer: boolean): string {
   const autoFlagKey = '__VITE_SCAN_AUTO_BOOTSTRAP_ACTIVE__'
+  const canvasId = '__vite_scan_canvas__'
 
   return `
 (() => {
@@ -106,8 +86,7 @@ function createAutoBootstrapScript(isActiveOnServer: boolean): string {
     const activeStorageKey = ${JSON.stringify(ACTIVE_STORAGE_KEY)}
     const isActiveOnServer = ${JSON.stringify(isActiveOnServer)}
     const autoFlagKey = ${JSON.stringify(autoFlagKey)}
-    const styleId = ${JSON.stringify(STYLE_ID)}
-    const hitAttr = ${JSON.stringify(HIT_ATTR)}
+    const canvasId = ${JSON.stringify(canvasId)}
 
     const parseNumber = (value, fallback, minimum = 0) => {
       const parsed = Number(value)
@@ -142,66 +121,167 @@ function createAutoBootstrapScript(isActiveOnServer: boolean): string {
         pulseSpreadPx: parseNumber(persisted?.pulseSpreadPx, ${DEFAULT_PULSE_SPREAD_PX}),
     }
 
-    const styles = [
-      '[' + hitAttr + '] {',
-      '  outline: ' + config.outlineWidthPx + 'px solid ' + config.highlightColor + ' !important;',
-      '  outline-offset: ' + config.outlineOffsetPx + 'px;',
-      '  animation: vite-scan-pulse ' + config.pulseDurationMs + 'ms ease-out;',
-      '}',
-      '@keyframes vite-scan-pulse {',
-      '  0% { box-shadow: 0 0 0 0 ' + config.glowColor + '; }',
-      '  100% { box-shadow: 0 0 0 ' + config.pulseSpreadPx + 'px transparent; }',
-      '}',
-    ].join('\\n')
+    const canvas = document.createElement('canvas')
+    canvas.id = canvasId
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:2147483647'
 
-    let style = document.getElementById(styleId)
-    if (!style) {
-      style = document.createElement('style')
-      style.id = styleId
-      ;(document.head || document.documentElement).appendChild(style)
+    const highlights = new Map()
+    const counts = new Map()
+    const labels = new Map()
+    let rafId = null
+
+    const BADGE_FONT = '600 10px ui-sans-serif,-apple-system,BlinkMacSystemFont,sans-serif'
+
+    const getComponentName = (el) => {
+      const keys = Object.keys(el)
+      for (const key of keys) {
+        if (key.startsWith('__reactFiber$') || key.startsWith('__reactInternalInstance$')) {
+          let fiber = el[key]
+          while (fiber) {
+            const t = fiber.type
+            if (typeof t === 'function' || typeof t === 'object') {
+              const n = typeof t === 'function' ? (t.displayName || t.name) : t?.displayName
+              if (n && n !== 'Fragment' && !n.startsWith('_')) return n
+            }
+            fiber = fiber.return
+          }
+        }
+      }
+      const vue = el.__vueParentComponent
+      if (vue) {
+        let c = vue
+        while (c) {
+          const n = c.type?.name || c.type?.__name
+          if (n) return n
+          c = c.parent
+        }
+      }
+      const meta = el.__svelte_meta
+      if (meta?.loc?.file) {
+        const m = meta.loc.file.match(/([^/\\\\]+)\\.\\w+$/)
+        if (m) return m[1]
+      }
+      const host = el.$$host
+      if (host) {
+        const n = host.constructor?.name
+        if (n && n !== 'Object') return n
+      }
+      return null
     }
-    style.textContent = styles
 
-    const markHit = (element) => {
-      element.setAttribute(hitAttr, '')
-      window.setTimeout(() => {
-        element.removeAttribute(hitAttr)
-      }, config.pulseDurationMs)
+    const render = () => {
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      const now = Date.now()
+      const dpr = window.devicePixelRatio || 1
+      const w = window.innerWidth
+      const h = window.innerHeight
+      const tw = Math.round(w * dpr)
+      const th = Math.round(h * dpr)
+      if (canvas.width !== tw || canvas.height !== th) {
+        canvas.width = tw
+        canvas.height = th
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.clearRect(0, 0, w, h)
+
+      for (const [target, startedAt] of highlights) {
+        const elapsed = now - startedAt
+        if (elapsed >= config.pulseDurationMs) {
+          highlights.delete(target)
+          continue
+        }
+        let rect
+        if (target instanceof Element) {
+          rect = target.getBoundingClientRect()
+        } else {
+          const range = document.createRange()
+          range.selectNodeContents(target)
+          rect = range.getBoundingClientRect()
+          range.detach()
+        }
+        if (rect.width === 0 && rect.height === 0) continue
+        const progress = elapsed / config.pulseDurationMs
+        const alpha = 1 - progress
+        const off = config.outlineOffsetPx
+        const spread = config.pulseSpreadPx * (1 - progress)
+
+        ctx.save()
+        ctx.globalAlpha = alpha
+        ctx.shadowColor = config.glowColor
+        ctx.shadowBlur = spread
+        ctx.strokeStyle = config.highlightColor
+        ctx.lineWidth = config.outlineWidthPx
+        ctx.strokeRect(rect.left - off, rect.top - off, rect.width + off * 2, rect.height + off * 2)
+        ctx.restore()
+
+        const countKey = target instanceof Element ? target : target.parentElement || target
+        const count = counts.get(countKey) || 1
+        const label = labels.get(countKey)
+        if (count > 1 || label) {
+          const parts = []
+          if (label) parts.push('<' + label + '>')
+          if (count > 1) parts.push('\\u00D7' + count)
+          const text = parts.join(' ')
+          ctx.save()
+          ctx.globalAlpha = 1
+          ctx.shadowColor = 'transparent'
+          ctx.shadowBlur = 0
+          ctx.font = BADGE_FONT
+          const tm = ctx.measureText(text)
+          const bw = tm.width + 8
+          const bh = 14
+          const bx = rect.right + off - bw
+          const by = rect.top - off - bh
+          ctx.beginPath()
+          ctx.roundRect(bx, by, bw, bh, 4)
+          ctx.fillStyle = config.highlightColor
+          ctx.fill()
+          ctx.fillStyle = '#fff'
+          ctx.textBaseline = 'top'
+          ctx.fillText(text, bx + 4, by + 2)
+          ctx.restore()
+        }
+      }
+
+      if (highlights.size > 0) rafId = requestAnimationFrame(render)
+      else rafId = null
     }
 
     const observer = new MutationObserver((records) => {
       const targets = new Set()
-
       for (const record of records) {
         if (record.type === 'attributes') {
-          if (record.attributeName === hitAttr)
-            continue
-
           targets.add(record.target)
           continue
         }
-
-        if (record.type === 'characterData' && record.target.parentElement)
-          targets.add(record.target.parentElement)
-
+        if (record.type === 'characterData' && record.target.nodeType === Node.TEXT_NODE)
+          targets.add(record.target)
         for (const node of record.addedNodes) {
-          if (node instanceof Element)
-            targets.add(node)
-          else if (node.nodeType === Node.TEXT_NODE && record.target instanceof Element)
-            targets.add(record.target)
+          if (node instanceof Element) targets.add(node)
+          else if (node.nodeType === Node.TEXT_NODE) targets.add(node)
         }
       }
-
-      for (const element of targets) {
-        if (element instanceof Element)
-          markHit(element)
+      for (const target of targets) {
+        const now = Date.now()
+        const countKey = target instanceof Element ? target : target.parentElement || target
+        highlights.set(target, now)
+        counts.set(countKey, (counts.get(countKey) || 0) + 1)
+        if (!labels.has(countKey)) {
+          const el = target instanceof Element ? target : target.parentElement
+          if (el) {
+            const name = getComponentName(el)
+            if (name) labels.set(countKey, name)
+          }
+        }
+        if (rafId === null) rafId = requestAnimationFrame(render)
       }
     })
 
     const start = () => {
-      if (!document.documentElement)
-        return
-
+      if (!document.documentElement) return
+      document.documentElement.appendChild(canvas)
       observer.observe(document.documentElement, {
         subtree: true,
         childList: true,
@@ -210,16 +290,16 @@ function createAutoBootstrapScript(isActiveOnServer: boolean): string {
       })
     }
 
-    if (document.documentElement)
-      start()
-    else
-      window.addEventListener('DOMContentLoaded', start, { once: true })
+    if (document.documentElement) start()
+    else window.addEventListener('DOMContentLoaded', start, { once: true })
 
     window.addEventListener('pagehide', () => {
       observer.disconnect()
-      for (const element of document.querySelectorAll('[' + hitAttr + ']'))
-        element.removeAttribute(hitAttr)
-
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      highlights.clear()
+      counts.clear()
+      labels.clear()
+      canvas.remove()
       window[autoFlagKey] = false
     }, { once: true })
   }
@@ -278,11 +358,7 @@ function createPanelEntry(clientScript: string, config: ViteScanRuntimeConfig, i
  * Registers the Vite Scan DevTools plugin, docks, and RPC handlers.
  */
 export function createViteScanPlugin(options: ViteScanPluginOptions = {}): PluginWithDevTools {
-  const initialConfig = sanitizeConfig({
-    inactiveIcon: options.inactiveIcon,
-    activeIcon: options.activeIcon,
-  })
-
+  const initialConfig = sanitizeConfig(options)
   let isActive = false
 
   return {

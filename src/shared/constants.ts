@@ -24,6 +24,8 @@ export const CONFIG_STORAGE_KEY = '__vite_scan_client_config_v1__'
 export const ACTIVE_STORAGE_KEY = '__vite_scan_active_v1__'
 /** DOM ID of the injected runtime style tag. */
 export const STYLE_ID = '__vite_scan_overlay_styles__'
+/** DOM ID of the canvas overlay element. */
+export const CANVAS_ID = '__vite_scan_canvas__'
 /** Attribute used to mark recently updated elements. */
 export const HIT_ATTR = 'data-vite-scan-hit'
 

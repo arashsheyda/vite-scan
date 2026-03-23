@@ -1,5 +1,6 @@
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { TextPreview } from './TextPreview'
 import './style.css'
 
 function createCards(seed: number) {
@@ -50,6 +51,8 @@ function App() {
           Toggle steady rerenders or fire a burst, then run <strong>Vite Scan</strong> from DevTools.
         </p>
       </header>
+
+      <TextPreview />
 
       <section className="toolbar">
         <button type="button" onClick={() => setSeed(current => current + 1)}>

@@ -1,8 +1,8 @@
-import { ROOT_ID, SCAN_ACTION_ID, STYLE_ID } from '../shared/constants'
-import { createOverlayCSS } from '../shared/styles'
+import { ROOT_ID, SCAN_ACTION_ID } from '../shared/constants'
 import { getRuntimeConfig, persistClientConfig } from './config'
+import { updateActiveOverlayConfig } from './scan-runtime'
 import type { DockClientScriptContext } from '@vitejs/devtools-kit/client'
-import type { ViteScanClientConfig } from './types'
+import type { ViteScanClientConfig } from '../shared/types'
 
 const AUTO_APPLY_DELAY_MS = 280
 const RECONCILE_RETRY_DELAY_MS = 320
@@ -181,15 +181,6 @@ function setSettingsStatus(root: HTMLElement, message: string): void {
     status.textContent = message
 }
 
-/** Refreshes existing runtime overlay style when present. */
-function refreshOverlayStyles(config: ViteScanClientConfig): void {
-  const style = document.getElementById(STYLE_ID) as HTMLStyleElement | null
-  if (!style)
-    return
-
-  style.textContent = createOverlayCSS(config)
-}
-
 /** Starts or stops scan action based on desired enabled state. */
 async function syncEnabledState(
   context: DockClientScriptContext,
@@ -265,7 +256,7 @@ async function mountSettings(context: DockClientScriptContext, panel: HTMLDivEle
     pulseSpreadPx.value = String(next.pulseSpreadPx)
     enabled.checked = next.enabled
 
-    refreshOverlayStyles(next)
+    updateActiveOverlayConfig(next)
     await syncEnabledState(context, next.enabled)
     await refreshStatus()
   }

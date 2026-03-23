@@ -8,7 +8,7 @@ import {
   DEFAULT_PULSE_SPREAD_PX,
 } from '../shared/constants'
 import type { DockClientScriptContext } from '@vitejs/devtools-kit/client'
-import type { ViteScanClientConfig, ViteScanRuntimeConfig } from './types'
+import type { ViteScanClientConfig, ViteScanRuntimeConfig } from '../shared/types'
 
 /** Coerces a value to a finite number, clamped to a minimum. Works with strings, numbers, null, and undefined. */
 function sanitizeNumber(value: unknown, fallback: number, minimum = 0): number {

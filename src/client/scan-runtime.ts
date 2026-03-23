@@ -1,6 +1,7 @@
-import { ACTIVE_STORAGE_KEY, HIT_ATTR, SESSION_KEY, STYLE_ID } from '../shared/constants'
-import { createOverlayCSS } from '../shared/styles'
-import type { ViteScanClientConfig, ViteScanSession } from './types'
+import { ACTIVE_STORAGE_KEY, CANVAS_ID, HIT_ATTR, SESSION_KEY } from '../shared/constants'
+import { createCanvasOverlay } from './canvas-overlay'
+import { getComponentName } from './component-name'
+import type { HighlightTarget, ViteScanClientConfig, ViteScanSession } from './types'
 import type { DockClientScriptContext } from '@vitejs/devtools-kit/client'
 
 /** Persists whether scan should auto-resume on full page refresh. */
@@ -26,33 +27,14 @@ function setSession(session: ViteScanSession | null): void {
   ;(window as any)[SESSION_KEY] = session
 }
 
-/** Injects or updates runtime styles for scan highlighting. */
-function ensureStyles(config: ViteScanClientConfig): void {
-  const styleText = createOverlayCSS(config)
-  const existing = document.getElementById(STYLE_ID) as HTMLStyleElement | null
-
-  if (existing) {
-    existing.textContent = styleText
-    return
-  }
-
-  const style = document.createElement('style')
-  style.id = STYLE_ID
-  style.textContent = styleText
-  document.head.appendChild(style)
+/** Removes the bootstrap canvas overlay so the full client overlay can take over. */
+function clearBootstrapOverlay(): void {
+  document.getElementById(CANVAS_ID)?.remove()
 }
 
 /** Mirrors active state to the node-side plugin for dock updates. */
 async function setDockActiveState(context: DockClientScriptContext, active: boolean): Promise<void> {
   await context.rpc.callOptional('vite-scan:set-active', active)
-}
-
-/** Marks an element as recently updated and clears the mark after pulse duration. */
-function markElementHit(element: Element, pulseDurationMs: number): void {
-  element.setAttribute(HIT_ATTR, '')
-  window.setTimeout(() => {
-    element.removeAttribute(HIT_ATTR)
-  }, pulseDurationMs)
 }
 
 /** Creates a compact selector-like label for log summaries. */
@@ -76,9 +58,16 @@ function getReadableSelector(element: Element): string {
   return `${element.tagName.toLowerCase()}:nth-of-type(${Math.max(index, 1)})`
 }
 
-/** Extracts affected elements from mutation records while ignoring self-noise. */
-function collectMutationTargets(records: MutationRecord[]): Set<Element> {
-  const targets = new Set<Element>()
+/** Creates a label for log summaries, including framework component name when available. */
+function getElementLabel(element: Element): string {
+  const selector = getReadableSelector(element)
+  const component = getComponentName(element)
+  return component ? `${selector} <${component}>` : selector
+}
+
+/** Extracts affected targets from mutation records while ignoring self-noise. */
+function collectMutationTargets(records: MutationRecord[]): Set<HighlightTarget> {
+  const targets = new Set<HighlightTarget>()
 
   for (const record of records) {
     if (record.type === 'attributes') {
@@ -89,24 +78,18 @@ function collectMutationTargets(records: MutationRecord[]): Set<Element> {
       continue
     }
 
-    if (record.type === 'characterData' && record.target.parentElement)
-      targets.add(record.target.parentElement)
+    if (record.type === 'characterData' && record.target.nodeType === Node.TEXT_NODE)
+      targets.add(record.target as Text)
 
     for (const node of record.addedNodes) {
       if (node instanceof Element)
         targets.add(node)
-      else if (node.nodeType === Node.TEXT_NODE && record.target instanceof Element)
-        targets.add(record.target as Element)
+      else if (node.nodeType === Node.TEXT_NODE)
+        targets.add(node as Text)
     }
   }
 
   return targets
-}
-
-/** Removes all active hit markers from the document. */
-function clearHitMarkers(): void {
-  for (const element of document.querySelectorAll(`[${HIT_ATTR}]`))
-    element.removeAttribute(HIT_ATTR)
 }
 
 /** Stops the current session, emits summary logs, and clears state/overlays. */
@@ -124,7 +107,7 @@ async function stopSession(context: DockClientScriptContext): Promise<void> {
 
   session.mutationObserver?.disconnect()
   session.performanceObserver?.disconnect()
-  clearHitMarkers()
+  session.canvasOverlay?.destroy()
   setActiveStorage(false)
   await setDockActiveState(context, false)
 
@@ -134,7 +117,11 @@ async function stopSession(context: DockClientScriptContext): Promise<void> {
     .slice(0, 5)
 
   const topLines = hottestElements.length > 0
-    ? hottestElements.map(([element, updates], index) => `${index + 1}. ${getReadableSelector(element)} - ${updates} updates`).join('\n')
+    ? hottestElements.map(([target, updates], index) => {
+        const el = target instanceof Element ? target : target.parentElement
+        const label = el ? getElementLabel(el) : '#text'
+        return `${index + 1}. ${label} - ${updates} updates`
+      }).join('\n')
     : 'No significant DOM mutations were observed.'
 
   const totalUpdates = Array.from(session.updates.values()).reduce((sum, count) => sum + count, 0)
@@ -184,12 +171,14 @@ export async function runScanAction(context: DockClientScriptContext, config: Vi
     return
   }
 
-  ensureStyles(config)
+  clearBootstrapOverlay()
+  const overlay = createCanvasOverlay(config)
 
   const session: ViteScanSession = {
     active: true,
     startedAt: Date.now(),
     pageHideHandler: null,
+    canvasOverlay: overlay,
     mutationObserver: null,
     performanceObserver: null,
     updates: new Map(),
@@ -201,9 +190,11 @@ export async function runScanAction(context: DockClientScriptContext, config: Vi
   session.mutationObserver = new MutationObserver((records) => {
     const targets = collectMutationTargets(records)
 
-    for (const element of targets) {
-      markElementHit(element, config.pulseDurationMs)
-      session.updates.set(element, (session.updates.get(element) ?? 0) + 1)
+    for (const target of targets) {
+      const countKey = target instanceof Element ? target : target.parentElement ?? target
+      const count = (session.updates.get(countKey) ?? 0) + 1
+      session.updates.set(countKey, count)
+      overlay.addHighlight(target, count)
     }
   })
 
@@ -257,7 +248,7 @@ export async function runScanAction(context: DockClientScriptContext, config: Vi
     activeSession.active = false
     activeSession.mutationObserver?.disconnect()
     activeSession.performanceObserver?.disconnect()
-    clearHitMarkers()
+    activeSession.canvasOverlay?.destroy()
     // Preserve active intent across refresh; panel reconcile will restart observers if needed.
     setSession(null)
   }
@@ -280,4 +271,9 @@ export async function runScanAction(context: DockClientScriptContext, config: Vi
       `Pulse duration: ${config.pulseDurationMs}ms`,
     ].join('\n'),
   })
+}
+
+/** Forwards a config update to the active canvas overlay, if one exists. */
+export function updateActiveOverlayConfig(config: ViteScanClientConfig): void {
+  getSession()?.canvasOverlay?.updateConfig(config)
 }
