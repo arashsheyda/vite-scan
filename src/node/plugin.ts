@@ -14,11 +14,12 @@ import {
   DEFAULT_PULSE_SPREAD_PX,
   SCAN_ACTION_ID,
   SCAN_DOCK_ID,
-  DEFAULT_ACTIVE_ICON,
-  DEFAULT_DISABLED_ICON,
-  DEFAULT_INACTIVE_ICON,
 } from '../shared/constants'
-import { sanitizeNumber, sanitizeString } from '../shared/utils'
+import { createGradientLogoDataUri, createLogoDataUri, sanitizeNumber, sanitizeString } from '../shared/utils'
+
+const DEFAULT_INACTIVE_ICON = createLogoDataUri('#BD34FE', '#9ca3af')
+const DEFAULT_ACTIVE_ICON = createGradientLogoDataUri('#41D1FF', '#BD34FE')
+const DEFAULT_DISABLED_ICON = createLogoDataUri('#9ca3af', '#9ca3af')
 import { createBootstrapScript } from './bootstrap-script'
 import type { DevToolsViewAction, DevToolsViewCustomRender, PluginWithDevTools } from '@vitejs/devtools-kit'
 import type { ViteScanPluginOptions } from './types'

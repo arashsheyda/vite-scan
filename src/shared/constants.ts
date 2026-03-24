@@ -1,5 +1,3 @@
-import { createGradientLogoDataUri, createLogoDataUri } from "./utils"
-
 /** Dock ID for the Vite Scan settings panel entry. */
 export const SCAN_DOCK_ID = 'vite-scan'
 /** Dock ID for the Vite Scan action entry. */
@@ -32,9 +30,3 @@ export const CANVAS_ID = '__vite_scan_canvas__'
 export const HIT_ATTR = 'data-vite-scan-hit'
 /** DOM ID for the settings panel root element. */
 export const ROOT_ID = '__vite_scan_settings_root__'
-/** Default icon used when scan is idle. */
-export const DEFAULT_INACTIVE_ICON = createLogoDataUri('#BD34FE', '#9ca3af')
-/** Default icon used while scan is active — full gradient. */
-export const DEFAULT_ACTIVE_ICON = createGradientLogoDataUri('#41D1FF', '#BD34FE')
-/** Default icon used when scan is disabled. */
-export const DEFAULT_DISABLED_ICON = createLogoDataUri('#9ca3af', '#9ca3af')

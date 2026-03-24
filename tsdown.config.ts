@@ -10,6 +10,17 @@ export default defineConfig([
     format: 'esm',
     platform: 'node',
     exports: true,
+    minify: true,
+    deps: {
+      neverBundle: [
+        '@vitejs/devtools-kit',
+        '@vitejs/devtools-rpc',
+        'vite',
+        'immer',
+        'birpc',
+        'valibot',
+      ],
+    },
   },
   {
     entry: {
@@ -17,6 +28,9 @@ export default defineConfig([
     },
     format: 'esm',
     platform: 'browser',
-    external: ['@vitejs/devtools-kit', '@vitejs/devtools-kit/client'],
+    minify: true,
+    deps: {
+      neverBundle: ['@vitejs/devtools-kit', '@vitejs/devtools-kit/client'],
+    },
   },
 ])
